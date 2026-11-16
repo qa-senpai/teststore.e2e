@@ -1,2 +1,2 @@
-export { createUniqueUser } from './users';
+export { createUniqueUser, defaultUser } from './users';
 export type { User } from './users';

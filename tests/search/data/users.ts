@@ -14,3 +14,9 @@ export function createUniqueUser(): User {
     password: 'Passw0rd!123',
   };
 }
+
+// Existing account used for API login. Override with USER_EMAIL / USER_PASSWORD.
+export const defaultUser: Pick<User, 'email' | 'password'> = {
+  email: process.env.USER_EMAIL ?? 'testsenp@gm.com',
+  password: process.env.USER_PASSWORD ?? '12345678',
+};

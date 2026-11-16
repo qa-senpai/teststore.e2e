@@ -1,6 +1,6 @@
 // spec: specs/search.md
 // seed: tests/seed.spec.ts
-import { test, expect } from '@fixtures';
+import { test, expect } from '../fixtures';
 import { noResultsRows } from './data/search/no-results';
 
 test.describe('Search - no results', () => {

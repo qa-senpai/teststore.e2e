@@ -1,6 +1,6 @@
 // spec: specs/search.md
 // seed: tests/seed.spec.ts
-import { test, expect } from '@fixtures';
+import { test, expect } from '../fixtures';
 
 const MUG_SUGGESTIONS = [
   'Customizable mug',
@@ -54,7 +54,9 @@ test.describe('Search - interaction flows', () => {
       await test.step('Press ArrowDown twice, then Enter', async () => {
         await searchPage.pressKey('ArrowDown', 2);
         await searchPage.submit();
-        await expect(page).toHaveURL(/id_product=6&rewrite=mug-the-best-is-yet-to-come&controller=product/);
+        await expect(page).toHaveURL(
+          /id_product=6&rewrite=mug-the-best-is-yet-to-come&controller=product/,
+        );
         await searchPage.expectProductPage('Mug The best is yet to come');
         await expect(page).not.toHaveURL(/controller=search/);
       });
@@ -70,7 +72,9 @@ test.describe('Search - interaction flows', () => {
       });
 
       await test.step('Verify the results page for `cushion`', async () => {
-        await expect(page).toHaveURL(/index\.php\?controller=search&s=cushion$/);
+        await expect(page).toHaveURL(
+          /index\.php\?controller=search&s=cushion$/,
+        );
         await searchPage.expectResultsPage();
         await searchPage.expectCounter('There are 3 products.');
         await searchPage.expectQueryValue('cushion');
