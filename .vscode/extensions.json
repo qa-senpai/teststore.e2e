@@ -1,0 +1,14 @@
+{
+  "recommendations": [
+    "ms-playwright.playwright",
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "christian-kohler.path-intellisense",
+    "mikestead.dotenv",
+    "github.vscode-github-actions",
+    "redhat.vscode-yaml",
+    "davidanson.vscode-markdownlint",
+    "streetsidesoftware.code-spell-checker",
+    "aaron-bond.better-comments"
+  ]
+}
