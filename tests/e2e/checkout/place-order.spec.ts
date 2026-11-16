@@ -1,7 +1,7 @@
-import { test } from "../fixtures";
+import { test } from '../../fixtures';
 
-test.describe("Checkout @e2e @checkout", () => {
-  test("[E2E-0301] registered user adds a product to the cart and places an order", async ({
+test.describe('Checkout @e2e @checkout', () => {
+  test('[E2E-0301] registered user adds a product to the cart and places an order', async ({
     login: _login,
     productPage,
     cartPage,
@@ -19,9 +19,9 @@ test.describe("Checkout @e2e @checkout", () => {
     await checkoutPage.expectAddressStep();
     // Address is only filled in when the account has none saved.
     await checkoutPage.confirmAddress({
-      address: "1 Test Street",
-      postcode: "12345",
-      city: "Testville",
+      address: '1 Test Street',
+      postcode: '12345',
+      city: 'Testville',
     });
     await checkoutPage.confirmDelivery();
     await checkoutPage.payAndPlaceOrder();

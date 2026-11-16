@@ -1,6 +1,6 @@
 // spec: specs/search.md
 // seed: tests/seed.spec.ts
-import { test, expect } from '../fixtures';
+import { test, expect } from '../../fixtures';
 
 const MUG_SUGGESTIONS = [
   'Customizable mug',

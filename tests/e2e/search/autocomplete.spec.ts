@@ -1,6 +1,6 @@
 // spec: specs/search.md (Scenario 4)
 // seed: tests/seed.spec.ts
-import { test } from '../fixtures';
+import { test } from '../../fixtures';
 import { autocompleteRows } from './data/search/autocomplete';
 
 test.describe('Search - autocomplete', () => {

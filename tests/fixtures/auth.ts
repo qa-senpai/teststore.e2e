@@ -1,6 +1,6 @@
-import { test as base, Cookie } from "@playwright/test";
-import { UserController } from "@api";
-import { defaultUser } from "../search/data";
+import { test as base, Cookie } from '@playwright/test';
+import { UserController } from '@api';
+import { defaultUser } from '../e2e/search/data';
 
 type AuthFixtures = {
   authCookies: Cookie[];

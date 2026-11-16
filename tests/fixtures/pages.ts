@@ -1,4 +1,4 @@
-import { test as base } from "@playwright/test";
+import { test as base } from '@playwright/test';
 import {
   CartPage,
   CheckoutPage,
@@ -7,7 +7,7 @@ import {
   ProductPage,
   RegistrationPage,
   SearchPage,
-} from "@pages";
+} from '../../app/ui/pages';
 
 type PageFixtures = {
   loginPage: LoginPage;
@@ -43,4 +43,4 @@ export const test = base.extend<PageFixtures>({
   },
 });
 
-export { expect } from "@playwright/test";
+export { expect } from '@playwright/test';

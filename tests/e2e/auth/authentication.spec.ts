@@ -1,4 +1,4 @@
-import { test } from '../fixtures';
+import { test } from '../../fixtures';
 import { createUniqueUser } from '../search/data';
 import type { User } from '../search/data';
 

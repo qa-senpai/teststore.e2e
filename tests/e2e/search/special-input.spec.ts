@@ -1,7 +1,7 @@
 // spec: specs/search.md
 // seed: tests/seed.spec.ts
 import type { Page, Response } from '@playwright/test';
-import { test, expect } from '../fixtures';
+import { test, expect } from '../../fixtures';
 import {
   SQL_INJECTION_QUERY,
   specialInputRows,
