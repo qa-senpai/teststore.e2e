@@ -1,6 +1,6 @@
 import { Page } from '@playwright/test';
-import { User } from '../data/users';
-import { BasePage } from './BasePage';
+import type { User } from '../../tests/search/data';
+import { BasePage } from '../BasePage';
 import { RegistrationPageLocators } from './RegistrationPageLocators';
 
 export class RegistrationPage extends BasePage {

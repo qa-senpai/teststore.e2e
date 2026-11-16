@@ -1,48 +1,40 @@
-import { test } from '@playwright/test';
-import { createUniqueUser, User } from '../../data/users';
-import { LoginPage } from '../../pages/LoginPage';
-import { MyAccountPage } from '../../pages/MyAccountPage';
-import { RegistrationPage } from '../../pages/RegistrationPage';
+import { test } from '@fixtures';
+import { createUniqueUser } from '../search/data';
+import type { User } from '../search/data';
 
 test.describe('User authentication', () => {
   let user: User;
 
   // The shop has no seeded account, so register a fresh one, then sign out.
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ registrationPage, myAccountPage }) => {
     user = createUniqueUser();
-    const registration = new RegistrationPage(page);
-    await registration.open();
-    await registration.register(user);
-    await new MyAccountPage(page).signOut();
+    await registrationPage.open();
+    await registrationPage.register(user);
+    await myAccountPage.signOut();
   });
 
-  test('user can log in with valid credentials', async ({ page }) => {
-    const loginPage = new LoginPage(page);
-    const myAccount = new MyAccountPage(page);
-
+  test('user can log in with valid credentials', async ({
+    loginPage,
+    myAccountPage,
+  }) => {
     await loginPage.open();
     await loginPage.login(user.email, user.password);
 
-    await myAccount.expectLoggedIn(`${user.firstName} ${user.lastName}`);
+    await myAccountPage.expectLoggedIn(`${user.firstName} ${user.lastName}`);
   });
 
-  test('user cannot log in with a wrong password', async ({ page }) => {
-    const loginPage = new LoginPage(page);
-
+  test('user cannot log in with a wrong password', async ({ loginPage }) => {
     await loginPage.open();
     await loginPage.login(user.email, 'WrongPassword!1');
 
     await loginPage.expectAuthenticationError();
   });
 
-  test('user can log out', async ({ page }) => {
-    const loginPage = new LoginPage(page);
-    const myAccount = new MyAccountPage(page);
-
+  test('user can log out', async ({ loginPage, myAccountPage }) => {
     await loginPage.open();
     await loginPage.login(user.email, user.password);
-    await myAccount.signOut();
+    await myAccountPage.signOut();
 
-    await myAccount.expectLoggedOut();
+    await myAccountPage.expectLoggedOut();
   });
 });

@@ -1,8 +1,9 @@
 # Example
 
 ```typescript
-import { BasePage } from './BasePage';
-import { LoginPageLocators } from './ExamplePageLocators';
+import type { Page } from '@playwright/test';
+import { BasePage } from '../BasePage';
+import { LoginPageLocators } from './LoginPageLocators';
 
 export class LoginPage extends BasePage {
   url = '/';
@@ -22,3 +23,19 @@ export class LoginPage extends BasePage {
   }
 }
 ```
+
+Place this class in `pages/LoginPage/LoginPage.ts` alongside `LoginPageLocators.ts`.
+Expose it through `pages/LoginPage/index.ts`:
+
+```typescript
+export { LoginPage } from './LoginPage';
+```
+
+Re-export the folder from `pages/index.ts`:
+
+```typescript
+export { BasePage } from './BasePage';
+export { LoginPage } from './LoginPage';
+```
+
+Consumers use `import { LoginPage } from '@pages'` after configuring the alias in `tsconfig.json`.

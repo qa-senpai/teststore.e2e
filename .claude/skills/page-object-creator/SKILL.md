@@ -6,15 +6,51 @@ description: Create or extend a Page Object for the Sauce Demo Playwright projec
 # Page Object creator
 
 Create page objects that follow the conventions already used in `pages/`. Read the reference example
-(`@.claude/skills/page-object-creator/references/ExamplePage.md` and `@.claude/skills/page-object-creator/references/ExamplePage.md` in this skill's folder) before writing a new page, and match its
+(`references/ExamplePage.md` and `references/ExamplePageLocators.md` in this skill's folder) before writing a new page, and match its
 style.
 
 ## File layout
 
-Every page is two files in `pages/`:
+Put every page object in its own folder named after the page class. For example:
 
-- `<Name>PageLocators.ts` holds the locators only.
-- `<Name>Page.ts` holds the URL and the actions and assertions.
+```text
+pages/
+  index.ts
+  BasePage.ts
+  LoginPage/
+    index.ts
+    LoginPage.ts
+    LoginPageLocators.ts
+    LoginPage.types.ts  # optional page-specific interfaces and types
+```
+
+- `<Name>Page/<Name>PageLocators.ts` holds the locators only.
+- `<Name>Page/<Name>Page.ts` holds the URL and the actions and assertions.
+- Keep page-specific interfaces and types in the same folder when needed; do not create empty type files.
+- `<Name>Page/index.ts` exports the page class and any public types. `pages/index.ts` re-exports each page folder and `BasePage`.
+
+## Barrel imports and TypeScript paths
+
+- Organize public imports through `index.ts` barrels for page objects and other modules created or changed as part of the task, including `helpers`, `utils`, and `enums`.
+- Consumers import from the module barrel, for example `import { LoginPage } from '@pages'`, `import { formatPrice } from '@utils'`, or `import { UserRole } from '@enums'`. Export types with `export type`.
+- Within a page folder, import its implementation files directly (`./LoginPageLocators`) to avoid circular imports through its own barrel. A page can import `BasePage` directly from `../BasePage` for the same reason.
+- Add or update aliases in `compilerOptions.paths` in the project's actual TypeScript configuration (`tsconfig.json` in this repository, not `tsconfig.ts`). Preserve existing options and paths. Set `baseUrl` to `"."` if needed, and map aliases to the relevant barrels, for example:
+
+  ```json
+  {
+    "compilerOptions": {
+      "baseUrl": ".",
+      "paths": {
+        "@pages": ["pages/index.ts"],
+        "@helpers": ["helpers/index.ts"],
+        "@utils": ["utils/index.ts"],
+        "@enums": ["enums/index.ts"]
+      }
+    }
+  }
+  ```
+
+- Add aliases only for modules that exist or are created in the task, using their actual project paths. Ensure the TypeScript `include` covers the new files and that the project's runner supports the aliases.
 
 Both extend or use the shared base: `pages/BasePage.ts` provides `page`, `url` and `open()`.
 
@@ -30,7 +66,7 @@ Both extend or use the shared base: `pages/BasePage.ts` provides `page`, `url` a
 
 ```ts
 import { expect, Page } from '@playwright/test';
-import { BasePage } from './BasePage';
+import { BasePage } from '../BasePage';
 import { CartPageLocators } from './CartPageLocators';
 
 export class CartPage extends BasePage {
@@ -69,14 +105,13 @@ export class CartPage extends BasePage {
 
 ## Reference example
 
-The reference example is two files in this skill's folder. Read both before you write a page:
+Read both reference templates before writing a page:
 
-- `.claude/skills/page-object-creator/ExamplePageLocators.ts` is the locators class.
-- `.claude/skills/page-object-creator/ExamplePage.ts` is the page class that uses it.
+- `references/ExamplePageLocators.md` contains the locators class.
+- `references/ExamplePage.md` contains the page class that uses it.
 
-They are templates, not code that runs. Copy their structure into `pages/` and rename the classes and files for the
-new page (`<Name>PageLocators.ts`, `<Name>Page.ts`). In a real page the imports are `./BasePage` and
-`./<Name>PageLocators`.
+Copy their structure into `pages/<Name>Page/` and rename the classes and files for the new page.
+Use `../BasePage` and `./<Name>PageLocators` inside the page implementation, then expose the page through the barrels.
 
 ## Workflow
 
@@ -84,7 +119,9 @@ new page (`<Name>PageLocators.ts`, `<Name>Page.ts`). In a real page the imports 
    `.claude/skills/playwright-cli/SKILL.md`). Its browser session does not read `playwright.config.js`, so inspect
    attributes with `[data-test="..."]` selectors there instead of
    `getByTestId`.
-2. Create the locators class, then the page class.
+2. Create `pages/<Name>Page/` with the locators class, page class, optional page-specific types, and `index.ts`. Update `pages/index.ts` and the relevant TypeScript path aliases.
 3. If the page is used in a test, run `PLAYWRIGHT_HTML_OPEN=never npx playwright test` and report the result. If a
    page has no test yet, say that its locators are unchecked against the live site.
-4. Do not edit tests, config or other pages unless the user asked for it.
+4. Register the new page in `fixtures/pages.ts` (import from the page barrel, `PageFixtures` type member, fixture entry) following the
+   `playwright-fixtures` skill (`.claude/skills/playwright-fixtures/SKILL.md`). This is mandatory for every new page.
+5. Registering the fixture, updating the relevant barrels, and configuring TypeScript paths/include are part of creating a page. Do not edit tests, unrelated configuration, or other page implementations unless the user asked for it.

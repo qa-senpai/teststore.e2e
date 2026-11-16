@@ -1,6 +1,8 @@
 # Example
 
 ```typescript
+import type { Locator, Page } from '@playwright/test';
+
 export class LoginPageLocators {
   readonly usernameInput: Locator;
   readonly passwordInput: Locator;
