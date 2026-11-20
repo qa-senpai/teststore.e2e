@@ -88,23 +88,17 @@ PLAYWRIGHT_HTML_OPEN=never npx playwright test tests/e2e/cart/cart-cleanup.spec.
 
 ## Console errors
 
-Every test automatically tracks browser console errors (`console.error`) and uncaught page
-exceptions on all pages of its context (`tests/fixtures/console.ts`). The test is **not**
-interrupted; after it finishes, the HTML report gets:
-
-- `console-errors.txt` — for each error: message, browser stack/source, page URL, time since
-  test start, the last Playwright call our code made, its call chain and a code snippet;
-- `console-error-N.png` — a screenshot taken at the moment the error was logged;
-- `console-errors-ignored.txt` — errors matched by a known-error rule;
-- a `console errors` annotation on the test.
-
-A short summary is also printed to the terminal.
+Every test listens to `page.on('console')` and `page.on('pageerror')` on all pages
+of its context (`tests/fixtures/console.ts`). Errors are collected without interrupting
+the test. After it finishes, `console-errors.txt` is attached to the HTML report with
+each error's type, message, page URL and source URL. The report is also printed to the
+terminal, or used as the failure message when `failOnConsoleErrors` is enabled.
 
 ```bash
 FAIL_ON_CONSOLE_ERRORS=true npx playwright test   # fail tests that logged unknown console errors
 ```
 
-Known, non-bug errors are filtered by rules in `tests/fixtures/console/knownConsoleErrors.ts`
+Known, non-bug errors are skipped using rules in `app/utils/console/knownConsoleErrors.ts`
 (`message` and optional `url` as substring or RegExp, plus a `reason`). For one spec or describe:
 
 ```ts
@@ -114,7 +108,9 @@ test.use({
 });
 ```
 
-Tests can read the collected errors via the `consoleErrors` fixture (`consoleErrors.errors`).
+Tests can read the collected messages via the `consoleErrors` fixture (`consoleErrors.errors`,
+a string array). The helper lives in `app/utils/console/checkPageConsoleError.ts`;
+the fixture removes its listeners during teardown.
 
 ## Project structure
 

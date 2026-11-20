@@ -14,7 +14,7 @@
       "@api": ["./app/api/index.ts"],
       "@data": ["./tests/e2e/search/data/index.ts"],
       "@fixtures": ["./tests/fixtures/index.ts"],
-      "@utils": ["./app/utils"]
+      "@utils": ["./app/utils/index.ts"]
     }
   },
   "include": [

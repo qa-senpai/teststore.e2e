@@ -1,5 +1,5 @@
-import { test as base } from '@playwright/test';
-import { ConsoleErrorTracker } from '../../app/utils/console/ConsoleErrorTracker';
+import { test as base, type Page } from '@playwright/test';
+import { checkPageConsoleError } from '../../app/utils/console/checkPageConsoleError';
 import {
   ConsoleErrorRule,
   knownConsoleErrors,
@@ -15,7 +15,7 @@ type ConsoleOptions = {
 };
 
 type ConsoleFixtures = {
-  consoleErrors: ConsoleErrorTracker;
+  consoleErrors: { errors: string[] };
 };
 
 const envFlag = (value: string | undefined): boolean =>
@@ -28,33 +28,40 @@ export const test = base.extend<ConsoleFixtures & ConsoleOptions>({
   ],
   ignoredConsoleErrors: [[], { option: true }],
 
-  // Auto fixture: runs for every test, never interrupts it, reports after it.
   consoleErrors: [
     async (
       { context, failOnConsoleErrors, ignoredConsoleErrors },
       use,
       testInfo,
     ) => {
-      const tracker = new ConsoleErrorTracker(context, testInfo, [
-        ...knownConsoleErrors,
-        ...ignoredConsoleErrors,
-      ]);
-      tracker.start();
+      const errors: string[] = [];
+      const rules = [...knownConsoleErrors, ...ignoredConsoleErrors];
+      const cleanups: (() => void)[] = [];
+      const onPage = (page: Page) => {
+        cleanups.push(checkPageConsoleError(page, errors, rules));
+      };
+      context.on('page', onPage);
+      context.pages().forEach(onPage);
 
-      await use(tracker);
+      await use({ errors });
+      context.off('page', onPage);
+      cleanups.forEach((cleanup) => cleanup());
 
-      await tracker.stop();
-      await tracker.attachReport();
+      if (errors.length === 0) return;
 
-      if (tracker.errors.length === 0) return;
+      const report = `${errors.length} console error(s) found.\n\n${errors.join('\n\n')}`;
+
+      await testInfo.attach('console-errors.txt', {
+        body: report,
+        contentType: 'text/plain',
+      });
+
       const passedSoFar = testInfo.status === testInfo.expectedStatus;
+
       if (failOnConsoleErrors && passedSoFar) {
-        throw new Error(tracker.summary(true));
+        throw new Error(report);
       }
-      // Not failing: still make it visible in the terminal output of the run.
-      console.warn(
-        `[${testInfo.titlePath.slice(1).join(' › ')}] ${tracker.summary(false)}`,
-      );
+      console.warn(`[${testInfo.title}] ${report}`);
     },
     { auto: true, box: true, title: 'console error tracker' },
   ],

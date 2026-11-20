@@ -6,7 +6,7 @@ import {
   loginAndSaveStorageState,
   readStorageStateFile,
   type UserToLogin,
-} from '../../app/utils/auth/storageState';
+} from '@utils';
 
 type AuthFixtures = {
   userToLogin: UserToLogin | undefined;

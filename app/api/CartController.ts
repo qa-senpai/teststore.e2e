@@ -23,14 +23,17 @@ export class CartController {
   async getProducts(): Promise<CartProduct[]> {
     const response = await this.request.get('/index.php', {
       params: { controller: 'cart', ajax: '1', action: 'update' },
+      failOnStatusCode: true,
     });
-    expect(response.status(), 'read current cart').toBe(200);
+
     const body = (await response.json()) as CartUpdateResponse;
+
     expect(body.success, 'read current cart').toBe(true);
     expect(
       Array.isArray(body.cart?.products),
       'cart products are present',
     ).toBe(true);
+
     return body.cart.products;
   }
 
@@ -75,14 +78,7 @@ export class CartController {
       }
     }
 
-    try {
-      await this.expectEmpty();
-    } catch (error) {
-      errors.push(String(error));
-    }
-    if (errors.length > 0) {
-      throw new Error(`Cart cleanup failed:\n${errors.join('\n')}`);
-    }
+    await this.expectEmpty();
   }
 
   async expectEmpty(): Promise<void> {
