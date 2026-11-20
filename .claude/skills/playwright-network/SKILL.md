@@ -39,7 +39,13 @@ Docs: [page.waitForResponse](https://playwright.dev/docs/api/class-page#page-wai
    and returns the typed body. Data checks go in an `expect*` method of the page object. Tests never call
    `page.waitForResponse` themselves.
 6. Use **one wait per expected request**. If one click fires several requests (add to cart → `controller=cart` +
-   `ps_shoppingcart` ajax), wait for the one whose data you need.
+   `ps_shoppingcart` ajax), wait for the one whose data you need — **and** for the one that re-renders the UI when the
+   next step depends on it. Cart quantity/delete changes fire `update=1`/`delete=1` and then
+   `controller=cart&ajax=1&action=refresh`; register both waits before the action and assert both are 200
+   (`CartPage.changeLine`). Otherwise the next click overlaps the refresh and the totals look stale.
+   Variant changes post to `controller=product` with `group[...]` in the URL (`ProductPage.changeVariant`); wait for
+   the window `load` event first, and don't wait for a request when the action can't fire one (clicking an already
+   selected colour) — the wait would hang.
 7. Do not mock with `page.route` unless the test asks for it. This repo tests the live site.
 
 ## Example: confirm the request and its data

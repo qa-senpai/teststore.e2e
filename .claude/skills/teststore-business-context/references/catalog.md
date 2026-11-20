@@ -1,6 +1,6 @@
 # Catalog: categories, products, listings, search
 
-Observed 2026-11-18. Re-verify exact values with `playwright-cli` if a test depends on them.
+Observed 2026-11-18, corrected 2026-11-20. Re-verify exact values with `playwright-cli` if a test depends on them.
 
 ## Category tree
 
@@ -64,7 +64,11 @@ Price range facet: $9.00 – $36.00. Cheapest: vector graphics ($9.00). Most exp
   (Facebook "Share", "Tweet", Pinterest), reassurance block (Security/Delivery/Return policy placeholders),
   tabs `Description` | `Product Details` (reference, `<n> Items` in stock, Data sheet features), "Comments (0)" with
   "No customer reviews for the moment.", and a "Viewed products" block.
-- Quantity 0, negative or letters → reset to 1. Stock shows ~1,000,000 items per product.
+- Quantity 0, negative or letters → reset to 1 (product page only; in the cart 0 removes the line).
+- Variant change: `POST controller=product` with `group[1]=…&group[2]=…` in the query string; the theme re-renders
+  price/stock and then writes the URL hash. Handlers are bound on window `load`. Selecting a size keeps the current
+  colour (product 1 defaults to S/White), and clicking an already selected colour sends no request. Wait for the
+  refresh response and the hash before the next change (`ProductPage.changeVariant`). Stock shows ~1,000,000 items per product.
 - Customizable mug (19): block "Product customization — Don't forget to save your customization to be able to add to
   cart", textarea `textField1` (1024 char. max), button `Save customization` (`submitCustomizedData`). Add to cart
   is **disabled** until saved; after saving the block shows "Your customization: <text>".
@@ -79,6 +83,9 @@ Price range facet: $9.00 – $36.00. Cheapest: vector graphics ($9.00). Most exp
 - **Sort by** (`order=` param): `Sales, highest to lowest` (`product.sales.desc`), `Relevance`
   (`product.position.asc`, default), `Name, A to Z` (`product.name.asc`), `Name, Z to A`, `Price, low to high`
   (`product.price.asc`), `Price, high to low`, `Reference, A to Z`, `Reference, Z to A`.
+  Sorting is ajax: the URL gets `order=…` and the dropdown label changes; poll the card values until they are
+  ordered. Equal prices exist (three mugs at $11.90), so price order is non-decreasing, not strictly increasing.
+  Covered by E2E-0607 / `CategoryPage`.
 - **Facets** (left column, "Filter By"); selecting one adds `&q=<Facet>-<Value>` (e.g. `q=Categories-Clothes`) and
   shows an "Active filters" bar. Values on All products:
   - Availability: In stock (19)

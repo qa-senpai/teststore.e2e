@@ -1,6 +1,6 @@
 # User flows: cart, checkout, authentication, account, other features
 
-Observed 2026-11-18 with `playwright-cli`. Messages are quoted exactly as the site shows them.
+Observed 2026-11-18 with `playwright-cli`, corrected 2026-11-20. Messages are quoted exactly as the site shows them.
 Field names are the HTML `name` attributes (the site has no `data-test` attributes).
 
 ## Cart
@@ -12,11 +12,13 @@ Field names are the HTML `name` attributes (the site has no `data-test` attribut
 - Modal `#blockcart-modal`: title "Product successfully added to your shopping cart", product name, unit price,
   chosen variant lines (`Size: L`, `Color: Black`), `Quantity: 3`, "There are N items in your cart." (or
   "There is 1 item in your cart."), `Subtotal`, `Shipping: $7.00`, `Total`, `Total (tax incl.)`, `Taxes: $0.00`,
-  buttons `Continue shopping` and `Proceed to checkout`.
+  buttons `Continue shopping` and `Proceed to checkout`. `Quantity:` is the line's quantity in the cart after the add
+  (not the quantity just added), so `Quantity: 1` holds only for a fresh line.
 - Header counter: `Cart (N)` — N is the total quantity, not the number of lines.
 - Adding the same product+variant again increases the line's quantity; a different variant is a separate line.
-- **Quirk:** the very first add to a new cart also adds 2 × Hummingbird printed t-shirt (M, Black). See
-  [known-issues.md](known-issues.md#1-first-add-to-cart-injects-2-t-shirts).
+- **Quirk:** the first add to a new cart may also add Hummingbird printed t-shirt lines (0–2, varies). See
+  [known-issues.md](known-issues.md#1-first-add-to-cart-injects-t-shirts). The guest cart can also lose the product
+  right after a confirmed add — [known-issues.md](known-issues.md#10-guest-cart-loses-the-product-after-a-confirmed-add).
 
 ### Cart page `/index.php?controller=cart&action=show`
 
@@ -27,15 +29,22 @@ Field names are the HTML `name` attributes (the site has no `data-test` attribut
   `Total (tax excl.)`, `Total (tax incl.)`, `Taxes: $0.00`, applied voucher lines (`20OFF -$<x>` with a remove
   icon), link `Have a promo code?`, button `Proceed to checkout`. "Continue shopping" link goes back.
 - Empty cart: "There are no more items in your cart", `0 items $0.00`, totals $0.00, no shipping line.
-- Changing quantity or deleting a line updates totals via ajax (no page reload) — wait with web-first assertions
-  on the totals, not timeouts.
+- Changing quantity (typing + blur, or the up/down buttons) sends **two** requests: `POST controller=cart` with
+  `update=1` (or `delete=1`), then `controller=cart&ajax=1&action=refresh`, which re-renders the totals. The input
+  shows the new value immediately, the totals only after the refresh — wait for both (`CartPage.changeLine`) before
+  the next change or a totals check.
+- Quantity `0` removes the line (subtotal drops by unit price × old qty). Letters can't be typed into the
+  `type=number` input: the value stays and no request is sent.
+- The `delete` link removes a line; the cart re-renders by ajax — wait on the line count before the next delete.
 
 ### Vouchers (cart rules)
 
 - `Have a promo code?` reveals input `discount_name` + `Add` button.
 - `20OFF` = 20 % off the products subtotal. Examples: subtotal $50.14 → `- $10.03`, total $47.11;
   subtotal $95.60 → `- $19.12`, total $83.48.
-- Unknown code → `This voucher does not exist.`
+- Unknown code → `This voucher does not exist.` After that the promo form stays open and the `Have a promo code?`
+  link is hidden — don't assert the link after a rejected code.
+- The applied `20OFF` line has a remove icon; removing it restores the subtotal-only total.
 - No vouchers are listed as "available" in the cart, and the account "Vouchers" page says "You do not have any
   vouchers.".
 
@@ -64,7 +73,9 @@ Tabs `Order as a guest` (default) | `Sign in`. Guest form `#customer-form`:
 
 Button `Continue` (`name="continue"`). Empty submit is blocked by native HTML5 validation (browser tooltips such as
 "Please fill in this field.", "Please tick this box if you want to proceed."). A name with digits passes the browser
-but the server returns `Invalid format.` and stays on step 1.
+but the server returns `Invalid format.` (in a `.form-group.has-error` on the field) and stays on step 1. The guest
+form has only the `psgdpr` consent checkbox (no `customer_privacy`). After a valid submit the collapsed step shows only
+its title and an `Edit` link (class `-complete`), not the name or e-mail.
 
 ### Step 2 — Addresses
 
@@ -83,19 +94,24 @@ Form `.js-address-form`:
 | Phone | `phone` | no | |
 | Use this address for invoice too | `use_same_address` | — | checked by default |
 
+US without a State: blocked by native validation (`id_state` is `required`, `select:invalid`), no server message,
+the step stays `-current`. Postcode: 4 digits is blocked by the browser; `ABCDE` gives the server error.
+
 Button `Continue` (`name="confirm-addresses"`). A logged-in customer with saved addresses sees address cards instead
 of the form (the existing `CheckoutPage.confirmAddress` handles both).
 
 ### Step 3 — Shipping method
 
-One carrier: radio `delivery_option[...]` "My carrier — Delivery next day! — $7.00". Optional comment textarea
+For a US / New York address: one carrier, radio `delivery_option[...]` "My carrier — Delivery next day! — $7.00",
+pre-selected. On 2026-11-20 the planner once also saw a free "Click and collect" (not reproduced) — select by name. Optional comment textarea
 `delivery_message` ("If you would like to add a comment about your order, please write it in the field below.").
 Button `Continue` (`name="confirmDeliveryOption"`).
 
 ### Step 4 — Payment
 
-- Radios `payment-option`: `#payment-option-1` "Pay by bank wire" (module `ps_wirepayment`),
-  `#payment-option-2` "Pay by Check" (module `ps_checkpayment`).
+- **Depends on the address country.** United States: radios `payment-option`: `#payment-option-1` "Pay by bank
+  wire" (module `ps_wirepayment`), `#payment-option-2` "Pay by Check" (module `ps_checkpayment`). France (used by
+  `CheckoutPage.confirmAddress`, E2E-0301): "Unfortunately, there is no payment method available."
 - Checkbox `conditions_to_approve[terms-and-conditions]` "I agree to the terms of service and will adhere to them
   unconditionally." (links to the terms CMS page).
 - `Place order` (`#payment-confirmation button`) is **disabled** until a payment option and the terms are selected.
