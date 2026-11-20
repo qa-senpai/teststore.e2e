@@ -6,3 +6,4 @@ export { SearchPage } from './SearchPage';
 export { ProductPage } from './ProductPage';
 export { CartPage } from './CartPage';
 export { CheckoutPage } from './CheckoutPage';
+export { CategoryPage } from './CategoryPage';

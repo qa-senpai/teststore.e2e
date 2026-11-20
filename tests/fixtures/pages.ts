@@ -1,6 +1,7 @@
 import { test as base } from '@playwright/test';
 import {
   CartPage,
+  CategoryPage,
   CheckoutPage,
   LoginPage,
   MyAccountPage,
@@ -17,6 +18,7 @@ type PageFixtures = {
   productPage: ProductPage;
   cartPage: CartPage;
   checkoutPage: CheckoutPage;
+  categoryPage: CategoryPage;
 };
 
 const test = base.extend<PageFixtures>({
@@ -40,6 +42,9 @@ const test = base.extend<PageFixtures>({
   },
   checkoutPage: async ({ page }, use) => {
     await use(new CheckoutPage(page));
+  },
+  categoryPage: async ({ page }, use) => {
+    await use(new CategoryPage(page));
   },
 });
 

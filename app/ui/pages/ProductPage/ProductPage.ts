@@ -96,4 +96,124 @@ export class ProductPage extends BasePage {
   async proceedToCheckout(): Promise<void> {
     await this.locators.proceedToCheckoutButton.click();
   }
+
+  async openById(id: number): Promise<void> {
+    await this.page.goto(`/index.php?id_product=${id}&controller=product`);
+  }
+
+  async expectProductDetails(name: RegExp, price: string): Promise<void> {
+    await expect(this.locators.productTitle).toHaveText(name);
+    await expect(this.locators.productPrice).toHaveText(price);
+    await expect(this.locators.addToCartButton).toBeEnabled();
+  }
+
+  async getPrice(): Promise<string> {
+    await expect(this.locators.productPrice).toBeVisible();
+    return (await this.locators.productPrice.innerText()).trim();
+  }
+
+  async expectPrice(price: string): Promise<void> {
+    await expect(this.locators.productPrice).toHaveText(price);
+  }
+
+  async getHeaderCartCount(): Promise<number> {
+    await expect(this.locators.headerCartCount).toHaveText(/^\(\d+\)$/);
+    const text = await this.locators.headerCartCount.innerText();
+    return Number(/\d+/.exec(text)?.[0]);
+  }
+
+  async expectHeaderCartCount(count: number): Promise<void> {
+    await expect(this.locators.headerCartCount).toHaveText(`(${count})`);
+  }
+
+  async expectHeaderCartCountAbove(count: number): Promise<number> {
+    await expect
+      .poll(async () =>
+        Number(
+          /\d+/.exec(await this.locators.headerCartCount.innerText())?.[0],
+        ),
+      )
+      .toBeGreaterThan(count);
+    return this.getHeaderCartCount();
+  }
+
+  async openCartFromHeader(): Promise<void> {
+    await this.locators.headerCartLink.click();
+  }
+
+  async expectSizeOptions(sizes: string[]): Promise<void> {
+    await expect(this.locators.sizeSelect.locator('option')).toHaveText(sizes);
+  }
+
+  async expectColorOptions(colors: string[]): Promise<void> {
+    await expect(this.locators.colorInputs).toHaveCount(colors.length);
+    for (const color of colors) {
+      await expect(
+        this.locators.colorGroup.locator(`input[title="${color}"]`),
+      ).toHaveCount(1);
+    }
+  }
+
+  async selectSize(size: string): Promise<void> {
+    await this.locators.sizeSelect.selectOption({ label: size });
+  }
+
+  async selectColor(color: string): Promise<void> {
+    await this.locators.colorGroup
+      .locator(`label[aria-label="${color}"]`)
+      .click();
+    await expect(
+      this.locators.colorGroup.locator(`input[title="${color}"]`),
+    ).toBeChecked();
+  }
+
+  async expectUrlHash(hash: RegExp): Promise<void> {
+    await expect(this.page).toHaveURL(hash);
+  }
+
+  /** Waits for the added-to-cart modal and returns the announced item count. */
+  async getModalItemCount(): Promise<number> {
+    await expect(this.locators.modalItemCount).toHaveText(
+      /There (is|are) \d+ items? in your cart\./,
+    );
+    const text = await this.locators.modalItemCount.innerText();
+    return Number(/(\d+) item/.exec(text)?.[1]);
+  }
+
+  async expectModalProduct(
+    name: RegExp,
+    options: {
+      quantity: number;
+      price?: string;
+      size?: string;
+      color?: string;
+    },
+  ): Promise<void> {
+    await expect(this.locators.modalProductName).toHaveText(name);
+    await expect(this.locators.modalQuantity).toHaveText(
+      String(options.quantity),
+    );
+    if (options.price) {
+      await expect(this.locators.modalProductPrice).toHaveText(options.price);
+    }
+    if (options.size) {
+      await expect(this.locators.modalSize).toHaveText(options.size);
+    }
+    if (options.color) {
+      await expect(this.locators.modalColor).toHaveText(options.color);
+    }
+  }
+
+  async expectModalControlsAndSummary(): Promise<void> {
+    await expect(this.locators.continueShoppingButton).toBeVisible();
+    await expect(this.locators.proceedToCheckoutButton).toBeVisible();
+    await expect(this.locators.modalSubtotal).toBeVisible();
+    await expect(this.locators.modalShipping).toBeVisible();
+    await expect(this.locators.modalTotal).toBeVisible();
+  }
+
+  async continueShopping(): Promise<void> {
+    await this.locators.continueShoppingButton.click();
+    await expect(this.locators.cartModal).toBeHidden();
+  }
 }

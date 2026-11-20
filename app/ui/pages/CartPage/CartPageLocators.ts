@@ -9,6 +9,21 @@ export class CartPageLocators {
   readonly discountAmount: Locator;
   readonly emptyCartMessage: Locator;
   readonly proceedToCheckoutButton: Locator;
+  readonly summaryItemCount: Locator;
+  readonly subtotalValue: Locator;
+  readonly shippingLine: Locator;
+  readonly shippingValue: Locator;
+  readonly totalValue: Locator;
+  readonly taxesValue: Locator;
+  readonly discountLine: Locator;
+  readonly voucherLines: Locator;
+  readonly voucherRemoveLinks: Locator;
+  readonly promoLink: Locator;
+  readonly promoInput: Locator;
+  readonly promoAddButton: Locator;
+  readonly promoError: Locator;
+  readonly continueShoppingLink: Locator;
+  readonly headerCartCount: Locator;
 
   constructor(page: Page) {
     this.cartItems = page.locator('.cart-overview li.cart-item');
@@ -22,5 +37,31 @@ export class CartPageLocators {
     this.proceedToCheckoutButton = page.locator(
       '.cart-detailed-actions a.btn-primary',
     );
+    this.summaryItemCount = page.locator(
+      '#cart-subtotal-products .js-subtotal',
+    );
+    this.subtotalValue = page.locator('#cart-subtotal-products .value');
+    this.shippingLine = page.locator('#cart-subtotal-shipping');
+    this.shippingValue = this.shippingLine.locator('.value').first();
+    this.totalValue = page.locator('.cart-summary-line.cart-total .value');
+    this.taxesValue = page
+      .locator('.cart-summary-totals .cart-summary-line')
+      .filter({ hasText: 'Taxes:' })
+      .locator('.value');
+    this.discountLine = page.locator('#cart-subtotal-discount');
+    this.voucherLines = page.locator('.cart-voucher .promo-name li');
+    this.voucherRemoveLinks = page.locator(
+      '.cart-voucher a[data-link-action="remove-voucher"]',
+    );
+    this.promoLink = page.locator('.promo-code-button.display-promo a');
+    this.promoInput = page.locator('.promo-code input.promo-input');
+    this.promoAddButton = page.locator(
+      '.promo-code form button[type="submit"]',
+    );
+    this.promoError = page.locator('.promo-code .js-error-text');
+    this.continueShoppingLink = page
+      .locator('.cart-grid-body')
+      .getByRole('link', { name: /Continue shopping/ });
+    this.headerCartCount = page.locator('.blockcart .cart-products-count');
   }
 }
