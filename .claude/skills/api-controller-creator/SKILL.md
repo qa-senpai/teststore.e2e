@@ -25,7 +25,7 @@ app/api/
   index.ts
   UserController.ts
   CartController.ts
-  CartController.types.ts   # optional controller-specific interfaces and types
+  AddressController.types.ts # optional controller-specific interfaces and types
 ```
 
 - `<Name>Controller.ts` holds the endpoints (paths and form payloads) and the request methods.
@@ -39,7 +39,7 @@ app/api/
 ## Barrel imports and TypeScript paths
 
 - Consumers import from the barrel: `import { UserController } from '@api'`. Export types with `export type`.
-- Inside `app/api/`, import sibling files directly (`./UserController`, `./CartController.types`), never through
+- Inside `app/api/`, import sibling files directly (`./UserController`, `./AddressController.types`), never through
   `@api`, to avoid circular imports through the barrel.
 - The `@api` alias already exists in `tsconfig.json` (`"@api": ["./app/api/index.ts"]`). Preserve existing options and
   paths; add an alias only for a new module you actually create.
@@ -61,7 +61,7 @@ export class CartController {
   `baseURL` passed to `playwright.request.newContext`.
 - Keep endpoints and fixed form fields (`submitLogin: '1'`, `token`, `action`) inside the controller, so tests only
   pass business data.
-- Leave a short comment at the top explaining where the request shape came from (the HAR file or a captured network
+- Leave a short comment at the top explaining where the request shape came from (the captured browser network
   request) and what status means success. This site has no documented API, so the comment is the documentation.
 - Import only what is used.
 
@@ -91,12 +91,15 @@ export class CartController {
 
 - Tests never do `new XController(request)`. Controllers are used from fixtures (see the `playwright-fixtures`
   skill, `.claude/skills/playwright-fixtures/SKILL.md`).
-- Setup that a test should not see (logging in, filling the cart) goes in a `void` or value fixture, like
-  `authCookies`/`login` in `tests/fixtures/auth.ts`, which builds `UserController` on a standalone context.
+- Setup that a test should not see (logging in, filling the cart) goes in a `void` or value fixture. Existing
+  examples: `tests/fixtures/auth.ts` overrides `storageState` and logs in through `UserController` on a standalone
+  context (helpers in `app/utils/auth/storageState.ts`, enabled per test with `test.use({ userToLogin })`);
+  `tests/fixtures/cleanup.ts` is an auto fixture that empties the cart through `CartController.cleanupCart()`.
 - If tests need to call a controller directly, expose it as a fixture named after the class with a lowercase first
-  letter (`CartController` → `cartController`) in `tests/fixtures/api.ts`, built on the test's `request` fixture
-  (or on `context.request` when the browser page must share the same session cookies), and add that file to the
-  `mergeTests(...)` call in `tests/fixtures/index.ts`.
+  letter (`CartController` → `cartController`) in `tests/fixtures/api.ts`, built on `context.request` when the
+  browser page must share the same session cookies (cart, account), or on a standalone
+  `playwright.request.newContext()` for an independent session, and append that file to the existing
+  `mergeTests(...)` call in `tests/fixtures/index.ts` (keep `pagesTest, authTest, consoleTest, cartTest`).
 
 ## Reference example
 
@@ -106,14 +109,14 @@ Read the reference template before writing a controller:
   uses it.
 
 Copy its structure into `app/api/<Name>Controller.ts`, rename the class for the new controller, and expose it through
-`app/api/index.ts`.
+`app/api/index.ts`. Also read the real `app/api/CartController.ts` (reads the cart, deletes lines, `cleanupCart`) —
+extend it instead of creating a second cart controller.
 
 ## Workflow
 
-1. Find the exact request the browser sends. First search `teststore.automationtesting.co.uk.har` at the repo root
-   (method, URL, form fields, response status). If the flow is not there, perform it on the live site with
-   `playwright-cli` (see `.claude/skills/playwright-cli/SKILL.md`) and read the network request. Note both the success
-   and the failure status.
+1. Find the exact request the browser sends: perform the flow on the live site with `playwright-cli` (see
+   `.claude/skills/playwright-cli/SKILL.md`, `requests` / `request <n>` commands) and read the method, URL, form
+   fields and response status. There is no HAR file in the repo. Note both the success and the failure status.
 2. Create `app/api/<Name>Controller.ts` (and `<Name>Controller.types.ts` if needed). Update `app/api/index.ts`.
 3. Wire it into a fixture when a test or another fixture uses it (`tests/fixtures/auth.ts` for login-type setup,
    `tests/fixtures/api.ts` for direct controller access), following the `playwright-fixtures` skill.

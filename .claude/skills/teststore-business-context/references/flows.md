@@ -113,7 +113,8 @@ Button `Continue` (`name="confirmDeliveryOption"`).
 - Success → redirect to the **home page** `/index.php` (HTTP 302 on the form POST — the API login relies on this);
   header `.user-info` shows `Sign out` and the customer's first + last name (link to my-account).
 - Logout: `Sign out` → `/index.php?mylogout=`; header shows `Sign in` again.
-- Fast login in tests: request the `login` fixture (`login: _login`) — it logs in `defaultUser` over HTTP.
+- Fast login in tests: `test.use({ userToLogin: defaultUser })` — `tests/fixtures/auth.ts` logs in over HTTP and
+  reuses the saved storage state (`.auth/<email>.json`) while the cookies stay valid.
 
 ### Forgot password `/index.php?controller=password`
 

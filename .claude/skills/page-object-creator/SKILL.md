@@ -56,8 +56,13 @@ app/ui/
 - Each layer has a barrel (`components/index.ts`, `modals/index.ts`, `pages/index.ts`) that re-exports its base class
   and every folder. Export types with `export type`.
 - Path aliases in `tsconfig.json` (`compilerOptions.paths`), next to the existing `@pages`:
-  `"@components": ["app/ui/components/index.ts"]`, `"@modals": ["app/ui/modals/index.ts"]`. Add an alias only when
+  `"@components": ["./app/ui/components/index.ts"]`, `"@modals": ["./app/ui/modals/index.ts"]`. Add an alias only when
   the folder exists. `include` already covers `app/**/*.ts`.
+
+> **Current state of the repo (check before relying on the tree above):** only `app/ui/pages/` exists. `BasePage`
+> has just `url` + `open()` — no header/footer yet — and `components/`, `modals/`, `@components`, `@modals` do not
+> exist. The tree is the target design: create a block (and its base class, barrel and alias) the first time a page
+> needs it, and move duplicated locators from existing pages into it only when that is part of the task.
 
 ## Dependency rules (prevents import cycles)
 

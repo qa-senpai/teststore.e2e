@@ -112,9 +112,10 @@ export class CategoryPage extends BasePage {
 ## Usage in a test
 
 ```typescript
-import { test } from '../fixtures';
+// tests/e2e/cart/add-sweater.spec.ts
+import { test } from '../../fixtures';
 
-test('[E2E-0301] adds a sweater from the product page @e2e @cart', async ({ productPage, cartPage }) => {
+test('[E2E-NNNN] adds a sweater from the product page', { tag: ['@e2e', '@cart'] }, async ({ productPage, cartPage }) => {
   await productPage.openById(2);
   await productPage.selectSize('S');
 

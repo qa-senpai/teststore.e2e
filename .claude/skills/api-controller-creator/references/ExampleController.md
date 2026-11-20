@@ -1,12 +1,12 @@
 # Example
 
-The real, working controller in this repo is `app/api/UserController.ts`:
+## Action controller — `app/api/UserController.ts` (real, working)
 
 ```typescript
 import { APIRequestContext, expect } from '@playwright/test';
 
 // PrestaShop has no JSON auth API: login is the same form POST the browser sends
-// (captured in teststore.automationtesting.co.uk.har). On success the server answers
+// (captured from the browser's network log). On success the server answers
 // 302 and sets the `PrestaShop-<hash>` session cookie on the request context.
 export class UserController {
   constructor(private readonly request: APIRequestContext) {}
@@ -22,38 +22,93 @@ export class UserController {
 }
 ```
 
-## Controller that reads data (template)
+## Controller that reads data — `app/api/CartController.ts` (real, shortened)
 
-Illustrative shape for a controller with a typed result. Confirm the endpoint, fields and status codes in the HAR
-or on the live site before using it — they are not verified here.
-
-`app/api/CartController.types.ts`:
-
-```typescript
-export interface CartSummary {
-  productsCount: number;
-}
-```
-
-`app/api/CartController.ts`:
+The full file also has `deleteProduct`, `cleanupCart` and `expectEmpty`. Extend it for new cart actions instead of
+creating another cart controller.
 
 ```typescript
 import { APIRequestContext, expect } from '@playwright/test';
-import type { CartSummary } from './CartController.types';
 
-// Same ajax request the product page sends on "Add to cart" (see the HAR / network tab).
-// PrestaShop answers 200 with JSON; `hasError: true` in the body means the add failed.
+export interface CartProduct {
+  id_product: string | number;
+  id_product_attribute: string | number;
+  id_customization: string | number | null;
+  remove_from_cart_url: string;
+}
+
+interface CartUpdateResponse {
+  success: boolean;
+  cart: { products: CartProduct[] };
+}
+
+// Same ajax call the cart page makes. Pass a context that shares cookies with the browser
+// (context.request / page.request): the cart belongs to the session.
 export class CartController {
   constructor(private readonly request: APIRequestContext) {}
 
-  async addProductToCart(productId: number, quantity = 1): Promise<CartSummary> {
-    const response = await this.request.post('/index.php?controller=cart', {
-      form: { id_product: String(productId), qty: String(quantity), add: '1', action: 'update', ajax: '1' },
+  async getProducts(): Promise<CartProduct[]> {
+    const response = await this.request.get('/index.php', {
+      params: { controller: 'cart', ajax: '1', action: 'update' },
+      failOnStatusCode: true,
     });
-    expect(response.status(), `Add to cart failed for product ${productId}`).toBe(200);
-    const body = await response.json();
-    expect(body.hasError, `Add to cart returned an error for product ${productId}`).toBeFalsy();
-    return { productsCount: body.cart.products_count };
+    const body = (await response.json()) as CartUpdateResponse;
+    expect(body.success, 'read current cart').toBe(true);
+    return body.cart.products;
+  }
+}
+```
+
+## New controller with a types file (template — not verified)
+
+Illustrative shape for a new controller whose types are big enough for their own file. Confirm the endpoint, fields
+and status codes on the live site with `playwright-cli requests` / `request <n>` before using it.
+
+`app/api/AddressController.types.ts`:
+
+```typescript
+export interface AddressInput {
+  alias: string;
+  firstname: string;
+  lastname: string;
+  address1: string;
+  city: string;
+  postcode: string;
+  id_country: number;
+  id_state?: number;
+}
+```
+
+`app/api/AddressController.ts`:
+
+```typescript
+import { APIRequestContext, expect } from '@playwright/test';
+import type { AddressInput } from './AddressController.types';
+
+// Same form POST the "Add a new address" page sends (captured from the browser's network log).
+// The form needs the static `token` rendered on the page; success redirects with 302, a validation
+// error re-renders the form with 200.
+export class AddressController {
+  constructor(private readonly request: APIRequestContext) {}
+
+  async addAddress(address: AddressInput): Promise<void> {
+    const token = await this.getFormToken();
+    const response = await this.request.post('/index.php?controller=address', {
+      form: { ...this.toForm(address), token, submitAddress: '1' },
+      maxRedirects: 0,
+    });
+    expect(response.status(), `Add address failed for ${address.alias}`).toBe(302);
+  }
+
+  private async getFormToken(): Promise<string> {
+    const html = await (await this.request.get('/index.php?controller=address')).text();
+    const token = html.match(/name="token" value="([a-f0-9]+)"/)?.[1];
+    expect(token, 'address form token').toBeTruthy();
+    return token!;
+  }
+
+  private toForm(address: AddressInput): Record<string, string> {
+    return Object.fromEntries(Object.entries(address).map(([k, v]) => [k, String(v)]));
   }
 }
 ```
@@ -65,34 +120,35 @@ export class CartController {
 ```typescript
 export { UserController } from './UserController';
 export { CartController } from './CartController';
-export type { CartSummary } from './CartController.types';
+export { AddressController } from './AddressController';
+export type { AddressInput } from './AddressController.types';
 ```
 
-Consumers use `import { CartController } from '@api'`.
+Consumers use `import { AddressController } from '@api'`.
 
 ## Fixture that exposes it
 
-`tests/fixtures/api.ts` (shares the browser's cookies through `context.request`, so a product added here shows up in
-the page's cart):
+`tests/fixtures/api.ts` (built on `context.request`, so the address is added to the same logged-in session the browser
+uses):
 
 ```typescript
 import { test as base } from '@playwright/test';
-import { CartController } from '@api';
+import { AddressController } from '@api';
 
 type ApiFixtures = {
-  cartController: CartController;
+  addressController: AddressController;
 };
 
 export const test = base.extend<ApiFixtures>({
-  cartController: async ({ context }, use) => {
-    await use(new CartController(context.request));
+  addressController: async ({ context }, use) => {
+    await use(new AddressController(context.request));
   },
 });
 ```
 
-Then add it to `tests/fixtures/index.ts`:
+Then append it to the existing call in `tests/fixtures/index.ts`:
 
 ```typescript
 import { test as apiTest } from './api';
-export const test = mergeTests(pagesTest, authTest, apiTest);
+export const test = mergeTests(pagesTest, authTest, consoleTest, cartTest, apiTest);
 ```

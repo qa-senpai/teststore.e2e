@@ -35,7 +35,7 @@ tax-excl. and tax-incl. totals are equal.
 | Search + autocomplete | `/index.php?controller=search&s=<q>` | `SearchPage` + data in `tests/e2e/search/data/search/` | [catalog.md](references/catalog.md#search) |
 | Cart, add-to-cart modal, vouchers | `/index.php?controller=cart&action=show` | `CartPage` (`cartPage`) | [flows.md](references/flows.md#cart) |
 | Checkout (guest / registered) | `/index.php?controller=order` | `CheckoutPage` (`checkoutPage`) | [flows.md](references/flows.md#checkout) |
-| Login / logout / password reset | `/index.php?controller=authentication` | `LoginPage` (`loginPage`), `login` fixture | [flows.md](references/flows.md#authentication) |
+| Login / logout / password reset | `/index.php?controller=authentication` | `LoginPage` (`loginPage`), `test.use({ userToLogin })` | [flows.md](references/flows.md#authentication) |
 | Registration | `/index.php?controller=registration` | `RegistrationPage` (`registrationPage`) | [flows.md](references/flows.md#registration) |
 | My account area | `/index.php?controller=my-account` | `MyAccountPage` (`myAccountPage`) | [flows.md](references/flows.md#my-account) |
 | Contact, newsletter, wishlist, CMS, guest tracking | see flows.md | — (no page object yet) | [flows.md](references/flows.md#other-features) |
@@ -93,8 +93,8 @@ Full list with reproduction steps: [known-issues.md](references/known-issues.md)
 
 - Fresh customer: `createUniqueUser()` from `tests/e2e/search/data/users.ts` (letters-only names, e-mail
   `qa.<timestamp>@example.com`, password `Passw0rd!123`). Password rule: 6–72 chars per hint (HTML pattern allows 5+).
-- Existing customer: `defaultUser` (override with `USER_EMAIL` / `USER_PASSWORD`), logged in through the `login`
-  fixture (API, no UI).
+- Existing customer: `defaultUser` (override with `USER_EMAIL` / `USER_PASSWORD`), logged in through
+  `test.use({ userToLogin: defaultUser })` (API login + cached storage state in `tests/fixtures/auth.ts`, no UI).
 - Valid address: `1 Test Street`, city `Testville`, postcode `12345`; for United States add a State (e.g. New York,
   `id_state=35`). The current `CheckoutPage.confirmAddress` picks `id_country` index 1 = **France** (no state needed).
 - Stable products for cart/checkout tests: mugs (ids 6–8, $11.90, no variants), notebooks (16–18, $12.90).

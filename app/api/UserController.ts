@@ -1,7 +1,7 @@
 import { APIRequestContext, expect } from '@playwright/test';
 
 // PrestaShop has no JSON auth API: login is the same form POST the browser sends
-// (captured in teststore.automationtesting.co.uk.har). On success the server answers
+// (captured from the browser's network log). On success the server answers
 // 302 and sets the `PrestaShop-<hash>` session cookie on the request context.
 export class UserController {
   constructor(private readonly request: APIRequestContext) {}
