@@ -13,9 +13,7 @@ test.describe('Cart totals', () => {
 
       await test.step('Add the mug, open the cart page and record the mug unit price and subtotal', async () => {
         await productPage.openById(6);
-        await productPage.addToCart();
-        await productPage.expectAddedToCartModal();
-        await productPage.proceedToCheckout();
+        await productPage.addToCartAndOpenCart(6, MUG);
         await cartPage.expectQuantity(MUG, 1);
         unitPrice = await cartPage.getLineUnitPriceCents(MUG);
         subtotal = await cartPage.getSubtotalCents();

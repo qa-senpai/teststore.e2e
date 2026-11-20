@@ -13,9 +13,7 @@ test.describe('Promo code', () => {
 
       await test.step('Add the mug, open the cart page, remove any pre-applied voucher and record the subtotal', async () => {
         await productPage.openById(6);
-        await productPage.addToCart();
-        await productPage.expectAddedToCartModal();
-        await productPage.proceedToCheckout();
+        await productPage.addToCartAndOpenCart(6, MUG);
         await cartPage.expectLine(MUG, { quantity: 1 });
         await cartPage.removeAppliedVouchers();
         await cartPage.expectNoDiscount();

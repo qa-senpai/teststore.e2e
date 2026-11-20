@@ -10,9 +10,7 @@ test.describe('Cart removal', () => {
     async ({ productPage, cartPage }) => {
       await test.step('Add the mug from its product page and open the cart page', async () => {
         await productPage.openById(6);
-        await productPage.addToCart();
-        await productPage.expectAddedToCartModal();
-        await productPage.proceedToCheckout();
+        await productPage.addToCartAndOpenCart(6, MUG);
         await cartPage.expectLine(MUG, { quantity: 1 });
       });
 

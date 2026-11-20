@@ -26,8 +26,11 @@ test.describe('Variant selection', () => {
       });
 
       await test.step('Click "Add to cart"', async () => {
-        await productPage.addToCart();
-        await productPage.expectAddedToCartModal();
+        await productPage.addToCartConfirmed(TSHIRT, async () => {
+          await productPage.openById(1);
+          await productPage.selectSize('L');
+          await productPage.selectColor('White');
+        });
         await productPage.expectModalProduct(TSHIRT, {
           quantity: 1,
           price,
@@ -52,8 +55,11 @@ test.describe('Variant selection', () => {
         await productPage.selectColor('Black');
         await productPage.expectUrlHash(/#\/1-size-s\/\d+-color-black/);
         await productPage.expectPrice(price);
-        await productPage.addToCart();
-        await productPage.expectAddedToCartModal();
+        await productPage.addToCartConfirmed(TSHIRT, async () => {
+          await productPage.openById(1);
+          await productPage.selectSize('S');
+          await productPage.selectColor('Black');
+        });
         await productPage.expectModalProduct(TSHIRT, {
           quantity: 1,
           price,

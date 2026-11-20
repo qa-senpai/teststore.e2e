@@ -18,8 +18,9 @@ test.describe('Add to cart', () => {
       });
 
       await test.step('Click "Add to cart"', async () => {
-        await productPage.addToCart();
-        await productPage.expectAddedToCartModal();
+        await productPage.addToCartConfirmed(MUG, () =>
+          productPage.openById(6),
+        );
         await productPage.expectModalProduct(MUG, { quantity: 1 });
         countInModal = await productPage.getModalItemCount();
         await productPage.expectModalControlsAndSummary();

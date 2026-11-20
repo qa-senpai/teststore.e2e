@@ -216,4 +216,56 @@ export class ProductPage extends BasePage {
     await this.locators.continueShoppingButton.click();
     await expect(this.locators.cartModal).toBeHidden();
   }
+
+  /**
+   * Adds the product and opens the cart page. The live demo occasionally returns a cart
+   * without the product it just confirmed (its cart state is shared/unstable), so the
+   * add is repeated when the cart page does not list the product.
+   */
+  async addToCartAndOpenCart(productId: number, name: RegExp): Promise<void> {
+    const attempts = 3;
+    const cartLine = this.page
+      .locator('.cart-overview li.cart-item .product-line-info a.label')
+      .filter({ hasText: name });
+    for (let attempt = 1; attempt <= attempts; attempt++) {
+      if (attempt > 1) await this.openById(productId);
+      await this.addToCart();
+      await this.expectAddedToCartModal();
+      await this.proceedToCheckout();
+      await expect(this.page).toHaveURL(/controller=cart/);
+      await expect(this.page.locator('.cart-grid')).toBeVisible();
+      if ((await cartLine.count()) > 0) return;
+    }
+    throw new Error(
+      `Product ${productId} is missing from the cart after ${attempts} add-to-cart attempts`,
+    );
+  }
+
+  /**
+   * Adds the open product and waits until the modal shows it. The live demo sometimes
+   * confirms the add but renders an empty modal (the cart is lost server-side), so the
+   * add is repeated after `reopen` restores the product page state.
+   */
+  async addToCartConfirmed(
+    name: RegExp,
+    reopen: () => Promise<void>,
+  ): Promise<void> {
+    const attempts = 3;
+    for (let attempt = 1; attempt <= attempts; attempt++) {
+      if (attempt > 1) await reopen();
+      await this.addToCart();
+      await this.expectAddedToCartModal();
+      try {
+        await expect(this.locators.modalProductName).toHaveText(name, {
+          timeout: 3_000,
+        });
+        return;
+      } catch {
+        // Empty modal: retry on a fresh page.
+      }
+    }
+    throw new Error(
+      `The add-to-cart modal never showed ${name} after ${attempts} attempts`,
+    );
+  }
 }
