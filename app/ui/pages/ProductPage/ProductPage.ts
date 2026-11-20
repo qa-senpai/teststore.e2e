@@ -1,4 +1,4 @@
-import { expect, Page, Response } from '@playwright/test';
+import { expect, Page, Response, test } from '@playwright/test';
 import { BasePage } from '../BasePage';
 import { ProductPageLocators } from './ProductPageLocators';
 
@@ -14,6 +14,13 @@ const isAddToCart = (r: Response) =>
   r.url().includes('controller=cart') &&
   r.request().method() === 'POST' &&
   new URLSearchParams(r.request().postData() ?? '').get('add') === '1';
+
+// A variant change posts to controller=product with the chosen group[n]=... in the query
+// string; the theme updates price, stock and the URL hash from its response.
+const isProductRefresh = (r: Response) =>
+  r.request().method() === 'POST' &&
+  r.url().includes('controller=product') &&
+  decodeURIComponent(r.url()).includes('group[');
 
 export class ProductPage extends BasePage {
   url = '/index.php?id_category=2&controller=category';
@@ -98,7 +105,13 @@ export class ProductPage extends BasePage {
   }
 
   async openById(id: number): Promise<void> {
-    await this.page.goto(`/index.php?id_product=${id}&controller=product`);
+    const response = await this.page.goto(
+      `/index.php?id_product=${id}&controller=product`,
+    );
+    expect(
+      response?.status(),
+      `product page ${id} failed to load (server error)`,
+    ).toBe(200);
   }
 
   async expectProductDetails(name: RegExp, price: string): Promise<void> {
@@ -154,14 +167,45 @@ export class ProductPage extends BasePage {
     }
   }
 
+  /**
+   * Runs a variant change and waits for the product refresh response. The theme binds
+   * its variant handlers on window load, so earlier changes would be ignored; changes
+   * made while a refresh is in flight would overlap it. A failed refresh (e.g. HTTP 500)
+   * fails here with a clear message.
+   */
+  private async changeVariant(action: () => Promise<void>): Promise<void> {
+    await this.page.waitForLoadState('load');
+    const responsePromise = this.page.waitForResponse(isProductRefresh);
+    await action();
+    const response = await responsePromise;
+    expect(
+      response.status(),
+      `product variant refresh failed: ${response.url()}`,
+    ).toBe(200);
+  }
+
   async selectSize(size: string): Promise<void> {
-    await this.locators.sizeSelect.selectOption({ label: size });
+    await this.changeVariant(() =>
+      this.locators.sizeSelect.selectOption({ label: size }).then(() => {}),
+    );
+    // The theme writes the hash after rendering the refresh response, so waiting for it
+    // also means the page is stable for the next variant change.
+    await expect(this.page).toHaveURL(
+      new RegExp(`#/\\d+-size-${size.toLowerCase()}/`),
+    );
   }
 
   async selectColor(color: string): Promise<void> {
-    await this.locators.colorGroup
-      .locator(`label[aria-label="${color}"]`)
-      .click();
+    const input = this.locators.colorGroup.locator(`input[title="${color}"]`);
+    // The size refresh keeps the current colour, which is White by default. Clicking an
+    // already selected colour fires no change event and so no request to wait for.
+    if (!(await input.isChecked())) {
+      await this.changeVariant(() =>
+        this.locators.colorGroup
+          .locator(`label[aria-label="${color}"]`)
+          .click(),
+      );
+    }
     await expect(
       this.locators.colorGroup.locator(`input[title="${color}"]`),
     ).toBeChecked();
@@ -220,7 +264,7 @@ export class ProductPage extends BasePage {
   /**
    * Adds the product and opens the cart page. The live demo occasionally returns a cart
    * without the product it just confirmed (its cart state is shared/unstable), so the
-   * add is repeated when the cart page does not list the product.
+   * add is repeated in a new guest session when the cart page does not list the product.
    */
   async addToCartAndOpenCart(productId: number, name: RegExp): Promise<void> {
     const attempts = 3;
@@ -228,7 +272,15 @@ export class ProductPage extends BasePage {
       .locator('.cart-overview li.cart-item .product-line-info a.label')
       .filter({ hasText: name });
     for (let attempt = 1; attempt <= attempts; attempt++) {
-      if (attempt > 1) await this.openById(productId);
+      if (attempt > 1) {
+        // A session that lost its cart keeps losing it: start a new guest session.
+        test.info().annotations.push({
+          type: 'site-flake',
+          description: `Guest cart lost the product; add-to-cart retry, attempt ${attempt} of ${attempts} in a new guest session`,
+        });
+        await this.page.context().clearCookies();
+        await this.openById(productId);
+      }
       await this.addToCart();
       await this.expectAddedToCartModal();
       await this.proceedToCheckout();
@@ -252,7 +304,15 @@ export class ProductPage extends BasePage {
   ): Promise<void> {
     const attempts = 3;
     for (let attempt = 1; attempt <= attempts; attempt++) {
-      if (attempt > 1) await reopen();
+      if (attempt > 1) {
+        // A session that lost its cart keeps losing it: start a new guest session.
+        test.info().annotations.push({
+          type: 'site-flake',
+          description: `Guest cart lost the product; add-to-cart retry, attempt ${attempt} of ${attempts} in a new guest session`,
+        });
+        await this.page.context().clearCookies();
+        await reopen();
+      }
       await this.addToCart();
       await this.expectAddedToCartModal();
       try {

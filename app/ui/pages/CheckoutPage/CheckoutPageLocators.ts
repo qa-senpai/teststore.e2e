@@ -25,6 +25,23 @@ export class CheckoutPageLocators {
   readonly termsCheckbox: Locator;
   readonly placeOrderButton: Locator;
   readonly orderConfirmationTitle: Locator;
+  readonly personalInfoStep: Locator;
+  readonly stepTitles: Locator;
+  readonly guestForm: Locator;
+  readonly guestTab: Locator;
+  readonly guestFirstNameField: Locator;
+  readonly guestLastNameField: Locator;
+  readonly guestEmailField: Locator;
+  readonly guestPasswordField: Locator;
+  readonly guestPrivacyCheckbox: Locator;
+  readonly guestContinueButton: Locator;
+  readonly guestFirstNameGroup: Locator;
+  readonly personalInfoEditLink: Locator;
+  readonly stateSelect: Locator;
+  readonly invalidStateSelect: Locator;
+  readonly phoneField: Locator;
+  readonly postcodeGroup: Locator;
+  readonly summaryProducts: Locator;
 
   constructor(page: Page) {
     this.addressesStep = page.locator('#checkout-addresses-step');
@@ -76,5 +93,34 @@ export class CheckoutPageLocators {
     this.orderConfirmationTitle = page.locator(
       '#content-hook_order_confirmation h3.card-title',
     );
+    this.personalInfoStep = page.locator('#checkout-personal-information-step');
+    this.stepTitles = page.locator('.checkout-step .step-title');
+    this.guestForm = page.locator('#checkout-guest-form form#customer-form');
+    this.guestTab = this.personalInfoStep.getByRole('tab', {
+      name: 'Order as a guest',
+    });
+    this.guestFirstNameField = this.guestForm.locator(
+      'input[name="firstname"]',
+    );
+    this.guestLastNameField = this.guestForm.locator('input[name="lastname"]');
+    this.guestEmailField = this.guestForm.locator('input[name="email"]');
+    this.guestPasswordField = this.guestForm.locator('input[name="password"]');
+    this.guestPrivacyCheckbox = this.guestForm.locator('input[name="psgdpr"]');
+    this.guestContinueButton = this.guestForm.locator(
+      'button[name="continue"]',
+    );
+    this.guestFirstNameGroup = this.guestForm
+      .locator('.form-group.has-error')
+      .filter({ has: page.locator('input[name="firstname"]') });
+    this.personalInfoEditLink = this.personalInfoStep.locator('.step-edit');
+    this.stateSelect = this.addressesStep.locator('select[name="id_state"]');
+    this.invalidStateSelect = this.addressesStep.locator(
+      'select[name="id_state"]:invalid',
+    );
+    this.phoneField = this.addressesStep.locator('input[name="phone"]');
+    this.postcodeGroup = this.addressesStep
+      .locator('.form-group.has-error')
+      .filter({ has: page.locator('input[name="postcode"]') });
+    this.summaryProducts = summary.locator('.cart-summary-products');
   }
 }

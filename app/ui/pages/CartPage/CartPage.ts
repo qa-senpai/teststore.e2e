@@ -16,6 +16,10 @@ export interface CartSummary {
 const isCartLineUpdate = (r: Response) =>
   r.url().includes('controller=cart') && /[?&](update|delete)=1/.test(r.url());
 
+// After every update the theme re-renders the cart from controller=cart&ajax=1&action=refresh.
+const isCartRefresh = (r: Response) =>
+  r.url().includes('controller=cart') && r.url().includes('action=refresh');
+
 /** Parses amounts like "$7.00", "- $10.03" (nbsp) or "Free" into cents. */
 const amountToCents = (text: string): number =>
   /\$/.test(text) ? usdToCents(text.replace(/^-\s*/, '').trim()) : 0;
@@ -164,13 +168,30 @@ export class CartPage extends BasePage {
     );
   }
 
-  /** Types a quantity into the line input and blurs it; waits for the ajax update. */
+  /**
+   * Runs an action that changes a cart line and waits for the whole round trip: the
+   * update/delete request and the refresh request that re-renders the cart. Both are
+   * registered before the action. Without waiting for the refresh, the next click can
+   * overlap it (the input already shows the new value, the totals are still old).
+   * Failed responses (e.g. HTTP 500) fail immediately with the request URL.
+   */
+  private async changeLine(action: () => Promise<void>): Promise<void> {
+    const updatePromise = this.page.waitForResponse(isCartLineUpdate);
+    const refreshPromise = this.page.waitForResponse(isCartRefresh);
+    await action();
+    const update = await updatePromise;
+    expect(update.status(), `cart update failed: ${update.url()}`).toBe(200);
+    const refresh = await refreshPromise;
+    expect(refresh.status(), `cart refresh failed: ${refresh.url()}`).toBe(200);
+  }
+
+  /** Types a quantity into the line input and blurs it; waits for the ajax update and refresh. */
   async setQuantity(name: string | RegExp, quantity: number): Promise<void> {
     const input = this.quantityInput(name);
-    const responsePromise = this.page.waitForResponse(isCartLineUpdate);
-    await input.fill(String(quantity));
-    await input.press('Tab');
-    expect((await responsePromise).status()).toBe(200);
+    await this.changeLine(async () => {
+      await input.fill(String(quantity));
+      await input.press('Tab');
+    });
   }
 
   /** Types text a quantity field cannot hold (no ajax update is expected). */
@@ -194,9 +215,7 @@ export class CartPage extends BasePage {
         ? '.js-increase-product-quantity'
         : '.js-decrease-product-quantity',
     );
-    const responsePromise = this.page.waitForResponse(isCartLineUpdate);
-    await button.click();
-    expect((await responsePromise).status()).toBe(200);
+    await this.changeLine(() => button.click());
   }
 
   async removeLine(name: string | RegExp): Promise<void> {

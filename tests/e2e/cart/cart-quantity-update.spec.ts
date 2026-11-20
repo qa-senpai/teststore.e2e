@@ -5,7 +5,7 @@ const MUG = /mug the best is yet to come/i;
 
 test.describe('Cart totals', () => {
   test(
-    '[E2E-0603] Changing a line quantity recalculates the cart totals; invalid quantity snaps back to 1',
+    '[E2E-0603] Changing a line quantity recalculates the cart totals; non-numeric input keeps 1 and quantity 0 removes the line',
     { tag: ['@e2e', '@cart'] },
     async ({ productPage, cartPage }) => {
       let unitPrice = 0;
