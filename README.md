@@ -48,23 +48,43 @@ test('opens the account', async ({ myAccountPage }) => {
 `userToLogin` accepts `{ email, password }`; `defaultUser` uses `USER_EMAIL` /
 `USER_PASSWORD` when set. Without `userToLogin`, tests start as guests.
 
-The `storageState` fixture follows the Content Hub pattern: read the saved JSON,
-validate the session against the server, and log in again if it is missing or invalid.
-Here validation requests `/index.php?controller=my-account` without following redirects
-and checks for the logout link. Login uses the existing PrestaShop form API controller.
-Malformed JSON is recreated; network and filesystem errors are surfaced.
+The `storageState` fixture follows the Content Hub algorithm:
 
-Full Playwright storage state (`cookies` and `origins`) is stored under
-`playwright/.auth/`, which is already ignored by Git. Filenames are hashes of the
-site origin and user email, so accounts and environments have separate caches.
-Files are replaced atomically for parallel workers. Delete the corresponding JSON
-to force a fresh login. Test changes and logout are not saved back to the cache;
-an invalidated server session is refreshed on the next use.
+1. File `playwright/.auth/<email>.json` exists → check the cookies with
+   `isCookiesValid` (`/index.php?controller=my-account` returns 200 only for a
+   logged-in user). Invalid → `loginAndSaveStorageState`.
+2. File does not exist → `loginAndSaveStorageState` (API form login, then save the
+   storage state to the file).
+3. Pass the file path to Playwright.
 
-Existing `login: _login` and `authCookies` fixtures remain supported and use the same
-cache, injecting cookies into the current context. Prefer `userToLogin` for new tests
-to restore the complete storage state when the context is created. Cached sessions
-do not isolate server-side data such as carts between tests using the same account.
+`playwright/.auth/` is ignored by Git. Delete the JSON to force a fresh login.
+Cached sessions do not isolate server-side data such as carts between tests using
+the same account.
+
+## Cart cleanup
+
+The automatic `cartCleanup` fixture runs `EntityCleanup.runEntityCleanup()` after
+every test and its `afterEach` hooks, including failed tests. Like the Content Hub
+cleanup helper, it delegates deletion to the API controller. It has a separate
+30-second teardown timeout and runs before the browser context is disposed.
+
+`CartController.cleanupCart()` reads the actual cart using the test's shared
+`context.request`, removes every line through its current server-issued removal
+URL, and verifies the cart is empty. This includes pre-existing leftovers and
+items added outside `ProductPage`; a completed checkout's empty cart is also valid.
+Deletion failures do not stop attempts to remove other lines, and cleanup errors
+fail the test. No global product registry or manual cleanup call is needed.
+
+Tests sharing an account also share server-side cart data. Run such scenarios
+sequentially (`--workers=1`) or use separate accounts when running them in parallel.
+
+The cleanup regression checks both the API and the cart page **after fixture
+teardown** and attaches `cart-after-cleanup` (`[]`) to the HTML report. It covers
+a guest and a freshly registered user, independently of the shared demo account:
+
+```bash
+PLAYWRIGHT_HTML_OPEN=never npx playwright test tests/e2e/cart/cart-cleanup.spec.ts --project=chromium --workers=1
+```
 
 ## Console errors
 

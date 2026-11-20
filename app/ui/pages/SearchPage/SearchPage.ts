@@ -1,9 +1,9 @@
-import { expect, Page } from "@playwright/test";
-import { BasePage } from "../BasePage";
-import { SearchPageLocators } from "./SearchPageLocators";
+import { expect, Page } from '@playwright/test';
+import { BasePage } from '../BasePage';
+import { SearchPageLocators } from './SearchPageLocators';
 
 export class SearchPage extends BasePage {
-  url = "/index.php";
+  url = '/index.php';
 
   private readonly locators: SearchPageLocators;
 
@@ -21,7 +21,7 @@ export class SearchPage extends BasePage {
   /** Fills the query and presses Enter (the search icon does not submit). */
   async search(query: string): Promise<void> {
     await this.locators.searchInput.fill(query);
-    await this.locators.searchInput.press("Enter");
+    await this.locators.searchInput.press('Enter');
   }
 
   /** Types key by key so the autocomplete is triggered. */
@@ -31,7 +31,7 @@ export class SearchPage extends BasePage {
   }
 
   async submit(): Promise<void> {
-    await this.locators.searchInput.press("Enter");
+    await this.locators.searchInput.press('Enter');
   }
 
   async pressKey(key: string, times = 1): Promise<void> {
@@ -63,7 +63,7 @@ export class SearchPage extends BasePage {
   async expectProductIds(ids: number[]): Promise<void> {
     await expect(this.locators.productCards.first()).toBeVisible();
     const actual = await this.locators.productCards.evaluateAll((cards) =>
-      cards.map((card) => Number(card.getAttribute("data-id-product"))),
+      cards.map((card) => Number(card.getAttribute('data-id-product'))),
     );
     expect(actual).toEqual(ids);
   }
@@ -71,10 +71,10 @@ export class SearchPage extends BasePage {
   async expectNoMatches(): Promise<void> {
     await expect(this.locators.noMatchesBlock).toBeVisible();
     await expect(this.locators.noMatchesTitle).toHaveText(
-      "No matches were found for your search",
+      'No matches were found for your search',
     );
     await expect(this.locators.noMatchesBlock).toContainText(
-      "Please try other keywords to describe what you are looking for.",
+      'Please try other keywords to describe what you are looking for.',
     );
     await expect(this.locators.productCards).toHaveCount(0);
     await expect(this.locators.resultsCounter).toHaveCount(0);
@@ -97,7 +97,7 @@ export class SearchPage extends BasePage {
   async expectSuggestions(names: string[]): Promise<void> {
     await expect(this.locators.autocompleteList).toBeVisible();
     await expect(
-      this.locators.autocompleteItems.locator("span.product"),
+      this.locators.autocompleteItems.locator('span.product'),
     ).toHaveText(names);
     await expect(this.locators.autocompleteStatus).toHaveText(
       `${names.length} results are available, use up and down arrow keys to navigate.`,
@@ -110,7 +110,7 @@ export class SearchPage extends BasePage {
 
   async expectNoSuggestionsMessage(): Promise<void> {
     await expect(this.locators.autocompleteStatus).toHaveText(
-      "No search results.",
+      'No search results.',
     );
   }
 

@@ -1,6 +1,6 @@
-import fs from "node:fs";
-import path from "node:path";
-import type { Page } from "@playwright/test";
+import fs from 'node:fs';
+import path from 'node:path';
+import type { Page } from '@playwright/test';
 
 /**
  * Remembers which line of OUR code (tests, page objects, fixtures) made the most recent
@@ -53,14 +53,14 @@ export function withoutRecording<T>(fn: () => T): T {
 }
 
 export function installCallSiteRecorder(page: Page): void {
-  patchPrototype(Object.getPrototypeOf(page), "page");
-  patchPrototype(Object.getPrototypeOf(page.locator("html")), "locator");
-  patchPrototype(Object.getPrototypeOf(page.keyboard), "keyboard");
-  patchPrototype(Object.getPrototypeOf(page.mouse), "mouse");
+  patchPrototype(Object.getPrototypeOf(page), 'page');
+  patchPrototype(Object.getPrototypeOf(page.locator('html')), 'locator');
+  patchPrototype(Object.getPrototypeOf(page.keyboard), 'keyboard');
+  patchPrototype(Object.getPrototypeOf(page.mouse), 'mouse');
   // expect(page).toHaveTitle / toHaveURL go through the main frame.
-  patchPrototype(Object.getPrototypeOf(page.mainFrame()), "frame", [
-    "_expect",
-    "waitForURL",
+  patchPrototype(Object.getPrototypeOf(page.mainFrame()), 'frame', [
+    '_expect',
+    'waitForURL',
   ]);
 }
 
@@ -73,13 +73,13 @@ function patchPrototype(
   patched.add(proto);
 
   for (const name of Object.getOwnPropertyNames(proto)) {
-    if (name === "constructor") continue;
+    if (name === 'constructor') continue;
     if (
-      only ? !only.includes(name) : name.startsWith("_") && name !== "_expect"
+      only ? !only.includes(name) : name.startsWith('_') && name !== '_expect'
     )
       continue;
     const descriptor = Object.getOwnPropertyDescriptor(proto, name);
-    if (!descriptor || typeof descriptor.value !== "function") continue;
+    if (!descriptor || typeof descriptor.value !== 'function') continue;
 
     const original = descriptor.value as (...args: unknown[]) => unknown;
     proto[name] = function (this: unknown, ...args: unknown[]) {
@@ -117,13 +117,13 @@ function patchPrototype(
 }
 
 function isThenable(value: unknown): value is PromiseLike<unknown> {
-  return !!value && typeof (value as PromiseLike<unknown>).then === "function";
+  return !!value && typeof (value as PromiseLike<unknown>).then === 'function';
 }
 
 function captureStack(): string {
   const limit = Error.stackTraceLimit;
   Error.stackTraceLimit = 40;
-  const stack = new Error().stack ?? "";
+  const stack = new Error().stack ?? '';
   Error.stackTraceLimit = limit;
   return stack;
 }
@@ -132,14 +132,14 @@ const FRAME_RE = /^\s*at (?:(.*?) \()?(.+?):(\d+):(\d+)\)?$/;
 
 function parseFrames(stack: string): CodeFrame[] {
   const frames: CodeFrame[] = [];
-  for (const raw of stack.split("\n").slice(1)) {
+  for (const raw of stack.split('\n').slice(1)) {
     const match = FRAME_RE.exec(raw);
     if (!match) continue;
-    const file = match[2].replace(/^file:\/\//, "");
-    if (!file.startsWith(ROOT) || file.includes("node_modules")) continue;
+    const file = match[2].replace(/^file:\/\//, '');
+    if (!file.startsWith(ROOT) || file.includes('node_modules')) continue;
     if (file.startsWith(SELF_DIR)) continue; // the tracker itself
     frames.push({
-      fn: match[1]?.replace(/^async /, ""),
+      fn: match[1]?.replace(/^async /, ''),
       file: path.relative(ROOT, file),
       line: Number(match[3]),
       column: Number(match[4]),
@@ -154,23 +154,23 @@ function describeCall(
   self: unknown,
   args: unknown[],
 ): string {
-  if (name === "_expect") {
+  if (name === '_expect') {
     const target =
-      label === "locator" ? `expect(${safeString(self)})` : "expect(page)";
-    return `${target} ${String(args[0] ?? "")}`.trim();
+      label === 'locator' ? `expect(${safeString(self)})` : 'expect(page)';
+    return `${target} ${String(args[0] ?? '')}`.trim();
   }
-  const target = label === "locator" ? safeString(self) : label;
+  const target = label === 'locator' ? safeString(self) : label;
   const shown = args
-    .filter((a) => typeof a === "string" || typeof a === "number")
+    .filter((a) => typeof a === 'string' || typeof a === 'number')
     .map((a) => truncate(JSON.stringify(a), 80));
-  return `${target}.${name}(${shown.join(", ")})`;
+  return `${target}.${name}(${shown.join(', ')})`;
 }
 
 function safeString(value: unknown): string {
   try {
     return withoutRecording(() => String(value));
   } catch {
-    return "locator";
+    return 'locator';
   }
 }
 
@@ -186,27 +186,27 @@ export function codeSnippet(frame: CodeFrame, around = 3): string {
     try {
       sourceCache.set(
         frame.file,
-        fs.readFileSync(path.join(ROOT, frame.file), "utf8").split("\n"),
+        fs.readFileSync(path.join(ROOT, frame.file), 'utf8').split('\n'),
       );
     } catch {
       sourceCache.set(frame.file, null);
     }
   }
   const lines = sourceCache.get(frame.file);
-  if (!lines) return "  (source not available)";
+  if (!lines) return '  (source not available)';
 
   const from = Math.max(1, frame.line - around);
   const to = Math.min(lines.length, frame.line + around);
   const width = String(to).length;
   const out: string[] = [];
   for (let n = from; n <= to; n++) {
-    const marker = n === frame.line ? ">" : " ";
+    const marker = n === frame.line ? '>' : ' ';
     out.push(`${marker} ${String(n).padStart(width)} | ${lines[n - 1]}`);
     if (n === frame.line) {
       out.push(
-        `  ${" ".repeat(width)} | ${" ".repeat(Math.max(0, frame.column - 1))}^`,
+        `  ${' '.repeat(width)} | ${' '.repeat(Math.max(0, frame.column - 1))}^`,
       );
     }
   }
-  return out.join("\n");
+  return out.join('\n');
 }

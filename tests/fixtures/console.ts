@@ -1,11 +1,11 @@
-import { test as base } from "@playwright/test";
-import { ConsoleErrorTracker } from "./console/ConsoleErrorTracker";
+import { test as base } from '@playwright/test';
+import { ConsoleErrorTracker } from '../../app/utils/console/ConsoleErrorTracker';
 import {
   ConsoleErrorRule,
   knownConsoleErrors,
-} from "./console/knownConsoleErrors";
+} from '../../app/utils/console/knownConsoleErrors';
 
-export type { ConsoleErrorRule } from "./console/knownConsoleErrors";
+export type { ConsoleErrorRule } from '../../app/utils/console/knownConsoleErrors';
 
 type ConsoleOptions = {
   /** Fail the test after it finishes if it logged console errors. Default: FAIL_ON_CONSOLE_ERRORS env var. */
@@ -19,7 +19,7 @@ type ConsoleFixtures = {
 };
 
 const envFlag = (value: string | undefined): boolean =>
-  /^(1|true|yes|on)$/i.test(value?.trim() ?? "");
+  /^(1|true|yes|on)$/i.test(value?.trim() ?? '');
 
 export const test = base.extend<ConsoleFixtures & ConsoleOptions>({
   failOnConsoleErrors: [
@@ -53,9 +53,9 @@ export const test = base.extend<ConsoleFixtures & ConsoleOptions>({
       }
       // Not failing: still make it visible in the terminal output of the run.
       console.warn(
-        `[${testInfo.titlePath.slice(1).join(" › ")}] ${tracker.summary(false)}`,
+        `[${testInfo.titlePath.slice(1).join(' › ')}] ${tracker.summary(false)}`,
       );
     },
-    { auto: true, box: true, title: "console error tracker" },
+    { auto: true, box: true, title: 'console error tracker' },
   ],
 });

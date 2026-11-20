@@ -1,9 +1,9 @@
-import { expect, Page } from "@playwright/test";
-import { BasePage } from "../BasePage";
-import { LoginPageLocators } from "./LoginPageLocators";
+import { expect, Page } from '@playwright/test';
+import { BasePage } from '../BasePage';
+import { LoginPageLocators } from './LoginPageLocators';
 
 export class LoginPage extends BasePage {
-  url = "/index.php?controller=authentication";
+  url = '/index.php?controller=authentication';
 
   private readonly locators: LoginPageLocators;
 
@@ -24,7 +24,7 @@ export class LoginPage extends BasePage {
 
   async expectAuthenticationError(): Promise<void> {
     await expect(this.locators.errorAlert).toContainText(
-      "Authentication failed",
+      'Authentication failed',
     );
   }
 }

@@ -1,6 +1,7 @@
 import { expect, Page } from '@playwright/test';
 import { BasePage } from '../BasePage';
 import { CheckoutPageLocators } from './CheckoutPageLocators';
+import { formatUsd } from '../../../utils/moneyFormatter';
 
 export interface Address {
   address: string;
@@ -34,9 +35,66 @@ export class CheckoutPage extends BasePage {
     await this.locators.confirmAddressButton.click();
   }
 
-  async confirmDelivery(): Promise<void> {
+  async confirmDelivery(carrierName: string): Promise<void> {
     await expect(this.locators.deliveryStep).toHaveClass(/-current/);
+    const radio = this.locators.deliveryOptions
+      .filter({ hasText: carrierName })
+      .getByRole('radio');
+    // Picking a carrier fires an ajax selectDeliveryOption call that re-renders the step.
+    // Clicking "Continue" before it finishes is swallowed, leaving payment unreachable.
+    if (!(await radio.isChecked())) {
+      const saved = this.page.waitForResponse(
+        (r) => r.url().includes('selectDeliveryOption'),
+        { timeout: 15_000 },
+      );
+      await radio.check();
+      await saved;
+    }
+    await expect(radio).toBeChecked();
+    await expect(this.locators.confirmDeliveryButton).toBeEnabled();
     await this.locators.confirmDeliveryButton.click();
+  }
+
+  async expectPaymentUnavailable(): Promise<void> {
+    await expect(this.locators.paymentStep).toHaveClass(/-current/);
+    await expect(this.locators.noPaymentMessage).toBeVisible();
+    await expect(this.locators.paymentOptions).toHaveCount(0);
+    await expect(this.locators.placeOrderButton).toBeDisabled();
+  }
+
+  async expectOrderSummary(expected: {
+    itemCount: number;
+    subtotalCents: number;
+    discountCents: number;
+    shippingCents: number;
+    taxCents: number;
+  }): Promise<void> {
+    const { itemCount, subtotalCents, discountCents, shippingCents, taxCents } =
+      expected;
+    const totalTaxExcl = subtotalCents - discountCents + shippingCents;
+    await expect(this.locators.summaryItemCount).toHaveText(
+      `${itemCount} ${itemCount === 1 ? 'item' : 'items'}`,
+    );
+    await expect(this.locators.summarySubtotal).toHaveText(
+      formatUsd(subtotalCents),
+    );
+    await expect(this.locators.summaryShipping).toHaveText(
+      formatUsd(shippingCents),
+    );
+    if (discountCents > 0) {
+      await expect(this.locators.summaryDiscount).toHaveText(
+        `- ${formatUsd(discountCents)}`,
+      );
+    } else {
+      await expect(this.locators.summaryDiscount).toHaveCount(0);
+    }
+    await expect(this.locators.summaryTaxes).toHaveText(formatUsd(taxCents));
+    await expect(this.locators.summaryTotalTaxExcl).toHaveText(
+      formatUsd(totalTaxExcl),
+    );
+    await expect(this.locators.summaryTotalTaxIncl).toHaveText(
+      formatUsd(totalTaxExcl + taxCents),
+    );
   }
 
   async payAndPlaceOrder(): Promise<void> {

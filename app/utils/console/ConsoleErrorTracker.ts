@@ -4,7 +4,7 @@ import type {
   Page,
   TestInfo,
   WebError,
-} from "@playwright/test";
+} from '@playwright/test';
 import {
   CallSite,
   codeSnippet,
@@ -12,10 +12,10 @@ import {
   installCallSiteRecorder,
   resetLastCall,
   withoutRecording,
-} from "./callSiteRecorder";
-import { ConsoleErrorRule, matchesRule } from "./knownConsoleErrors";
+} from './callSiteRecorder';
+import { ConsoleErrorRule, matchesRule } from './knownConsoleErrors';
 
-export type ConsoleErrorKind = "console.error" | "pageerror";
+export type ConsoleErrorKind = 'console.error' | 'pageerror';
 
 export type ConsoleErrorEntry = {
   index: number;
@@ -58,10 +58,10 @@ export class ConsoleErrorTracker {
   private readonly onPage = (page: Page) => installCallSiteRecorder(page);
 
   private readonly onConsole = (msg: ConsoleMessage) => {
-    if (msg.type() !== "error") return;
+    if (msg.type() !== 'error') return;
     const { url, lineNumber, columnNumber } = msg.location();
     this.record(msg.page(), {
-      kind: "console.error",
+      kind: 'console.error',
       text: msg.text(),
       source: url ? `${url}:${lineNumber + 1}:${columnNumber + 1}` : undefined,
     });
@@ -70,7 +70,7 @@ export class ConsoleErrorTracker {
   private readonly onWebError = (webError: WebError) => {
     const error = webError.error();
     this.record(webError.page(), {
-      kind: "pageerror",
+      kind: 'pageerror',
       text: `${error.name}: ${error.message}`,
       stack: error.stack,
     });
@@ -79,23 +79,23 @@ export class ConsoleErrorTracker {
   start(): void {
     resetLastCall();
     this.context.pages().forEach(this.onPage);
-    this.context.on("page", this.onPage);
-    this.context.on("console", this.onConsole);
-    this.context.on("weberror", this.onWebError);
+    this.context.on('page', this.onPage);
+    this.context.on('console', this.onConsole);
+    this.context.on('weberror', this.onWebError);
   }
 
   async stop(): Promise<void> {
-    this.context.off("page", this.onPage);
-    this.context.off("console", this.onConsole);
-    this.context.off("weberror", this.onWebError);
+    this.context.off('page', this.onPage);
+    this.context.off('console', this.onConsole);
+    this.context.off('weberror', this.onWebError);
     await Promise.allSettled(this.screenshots);
   }
 
   private record(
     page: Page | null,
-    data: Pick<ConsoleErrorEntry, "kind" | "text" | "stack" | "source">,
+    data: Pick<ConsoleErrorEntry, 'kind' | 'text' | 'stack' | 'source'>,
   ): void {
-    const pageUrl = page ? withoutRecording(() => page.url()) : "(no page)";
+    const pageUrl = page ? withoutRecording(() => page.url()) : '(no page)';
     const entry: ConsoleErrorEntry = {
       ...data,
       index: 0,
@@ -135,10 +135,10 @@ export class ConsoleErrorTracker {
     this.lastShot = { page, at: now, name };
     this.screenshots.push(
       withoutRecording(() =>
-        page.screenshot({ timeout: 5_000, animations: "disabled" }),
+        page.screenshot({ timeout: 5_000, animations: 'disabled' }),
       ).then(
         (body) =>
-          this.testInfo.attach(name, { body, contentType: "image/png" }),
+          this.testInfo.attach(name, { body, contentType: 'image/png' }),
         () => undefined, // page navigated away / closed — the text report is still there
       ),
     );
@@ -148,23 +148,23 @@ export class ConsoleErrorTracker {
   async attachReport(): Promise<void> {
     if (this.errors.length > 0) {
       this.testInfo.annotations.push({
-        type: "console errors",
+        type: 'console errors',
         description: `${this.errors.length} console error(s) — see the "console-errors.txt" attachment`,
       });
-      await this.testInfo.attach("console-errors.txt", {
+      await this.testInfo.attach('console-errors.txt', {
         body: this.formatReport(),
-        contentType: "text/plain",
+        contentType: 'text/plain',
       });
     }
     if (this.ignored.length > 0) {
-      await this.testInfo.attach("console-errors-ignored.txt", {
+      await this.testInfo.attach('console-errors-ignored.txt', {
         body: this.ignored
           .map(
             (e) =>
               `#${e.index} [${e.kind}] ${e.text}\n  page: ${e.pageUrl}\n  ignored: ${e.ignoredBy?.reason}`,
           )
-          .join("\n\n"),
-        contentType: "text/plain",
+          .join('\n\n'),
+        contentType: 'text/plain',
       });
     }
   }
@@ -176,20 +176,20 @@ export class ConsoleErrorTracker {
         `  #${e.index} [${e.kind}] ${firstLine(e.text)}\n      at ${e.callSite?.frames[0] ? frameRef(e.callSite.frames[0]) : e.pageUrl}`,
     );
     return [
-      `${this.errors.length} console error(s) found${failing ? " (FAIL_ON_CONSOLE_ERRORS is on)" : ""}. Details and screenshots are in the HTML report attachments.`,
+      `${this.errors.length} console error(s) found${failing ? ' (FAIL_ON_CONSOLE_ERRORS is on)' : ''}. Details and screenshots are in the HTML report attachments.`,
       ...lines,
-    ].join("\n");
+    ].join('\n');
   }
 
   formatReport(): string {
     const header = [
-      `Test:    ${this.testInfo.titlePath.join(" › ")}`,
+      `Test:    ${this.testInfo.titlePath.join(' › ')}`,
       `Project: ${this.testInfo.project.name}`,
       `File:    ${this.testInfo.file}`,
-      `Errors:  ${this.errors.length}${this.ignored.length ? ` (+${this.ignored.length} ignored as known)` : ""}`,
-    ].join("\n");
+      `Errors:  ${this.errors.length}${this.ignored.length ? ` (+${this.ignored.length} ignored as known)` : ''}`,
+    ].join('\n');
     return [header, ...this.errors.map(formatEntry)].join(
-      `\n\n${"=".repeat(80)}\n\n`,
+      `\n\n${'='.repeat(80)}\n\n`,
     );
   }
 }
@@ -197,29 +197,29 @@ export class ConsoleErrorTracker {
 function formatEntry(e: ConsoleErrorEntry): string {
   const out = [
     `#${e.index} [${e.kind}] at +${(e.elapsedMs / 1000).toFixed(2)}s`,
-    "",
-    "Message:",
+    '',
+    'Message:',
     indent(e.text),
   ];
   if (e.stack && e.stack !== e.text)
-    out.push("", "Browser stack:", indent(e.stack));
-  out.push("", `Page URL:  ${e.pageUrl}`);
+    out.push('', 'Browser stack:', indent(e.stack));
+  out.push('', `Page URL:  ${e.pageUrl}`);
   if (e.source) out.push(`Source:    ${e.source}`);
   out.push(
-    `Screenshot: ${e.screenshotName ?? "(not taken: page closed or screenshot limit reached)"}`,
+    `Screenshot: ${e.screenshotName ?? '(not taken: page closed or screenshot limit reached)'}`,
   );
 
   const site = e.callSite;
-  out.push("", "Test code running at that moment:");
+  out.push('', 'Test code running at that moment:');
   if (!site) {
-    out.push("  (no Playwright call made yet by the test)");
-    return out.join("\n");
+    out.push('  (no Playwright call made yet by the test)');
+    return out.join('\n');
   }
   out.push(`  Last Playwright call: ${site.api}`);
   out.push(`  State: ${callState(site)}`);
-  out.push("  Call chain (innermost first):");
+  out.push('  Call chain (innermost first):');
   site.frames.forEach((f) =>
-    out.push(`    at ${f.fn ? `${f.fn} ` : ""}(${frameRef(f)})`),
+    out.push(`    at ${f.fn ? `${f.fn} ` : ''}(${frameRef(f)})`),
   );
   // Snippets for the innermost frame (page object) and the test itself.
   const shown = new Set<string>();
@@ -227,16 +227,16 @@ function formatEntry(e: ConsoleErrorEntry): string {
     const key = frameRef(frame);
     if (shown.has(key)) continue;
     shown.add(key);
-    out.push("", `  ${key}`, indent(codeSnippet(frame), 2));
+    out.push('', `  ${key}`, indent(codeSnippet(frame), 2));
   }
-  return out.join("\n");
+  return out.join('\n');
 }
 
 // `site` is a snapshot taken when the error was logged, so settledAt reflects that moment.
 function callState(site: CallSite): string {
   return site.settledAt === undefined
-    ? "in progress when the error was logged"
-    : `finished${site.failed ? " (with an error)" : ""} before the error was logged — the error came from page activity after it`;
+    ? 'in progress when the error was logged'
+    : `finished${site.failed ? ' (with an error)' : ''} before the error was logged — the error came from page activity after it`;
 }
 
 function frameRef(f: { file: string; line: number; column: number }): string {
@@ -244,14 +244,14 @@ function frameRef(f: { file: string; line: number; column: number }): string {
 }
 
 function firstLine(text: string): string {
-  const line = text.split("\n")[0];
+  const line = text.split('\n')[0];
   return line.length > 160 ? `${line.slice(0, 159)}…` : line;
 }
 
 function indent(text: string, spaces = 2): string {
-  const pad = " ".repeat(spaces);
+  const pad = ' '.repeat(spaces);
   return text
-    .split("\n")
+    .split('\n')
     .map((l) => pad + l)
-    .join("\n");
+    .join('\n');
 }

@@ -35,7 +35,7 @@ export function matchesRule(
 }
 
 function matches(pattern: string | RegExp, value: string): boolean {
-  return typeof pattern === "string"
+  return typeof pattern === 'string'
     ? value.includes(pattern)
     : pattern.test(value);
 }

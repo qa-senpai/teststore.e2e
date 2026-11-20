@@ -1,13 +1,16 @@
-import { APIRequestContext, expect } from "@playwright/test";
-import type { AddedCartProduct } from "../state/addedCartProducts";
+import { APIRequestContext, expect } from '@playwright/test';
+
+export interface CartProduct {
+  id_product: string | number;
+  id_product_attribute: string | number;
+  id_customization: string | number | null;
+  remove_from_cart_url: string;
+}
 
 interface CartUpdateResponse {
   success: boolean;
   cart: {
-    products: {
-      id_product: string | number;
-      id_product_attribute: string | number;
-    }[];
+    products: CartProduct[];
   };
 }
 
@@ -17,18 +20,29 @@ interface CartUpdateResponse {
 export class CartController {
   constructor(private readonly request: APIRequestContext) {}
 
-  async deleteProduct(product: AddedCartProduct): Promise<void> {
-    const response = await this.request.post("/index.php", {
-      params: {
-        controller: "cart",
-        delete: "1",
-        id_product: product.id_product,
-        id_product_attribute: product.id_product_attribute,
-        id_customization: product.id_customization,
-        token: product.token,
-      },
-      form: { ajax: "1", action: "update" },
-      headers: { "x-requested-with": "XMLHttpRequest" },
+  async getProducts(): Promise<CartProduct[]> {
+    const response = await this.request.get('/index.php', {
+      params: { controller: 'cart', ajax: '1', action: 'update' },
+    });
+    expect(response.status(), 'read current cart').toBe(200);
+    const body = (await response.json()) as CartUpdateResponse;
+    expect(body.success, 'read current cart').toBe(true);
+    expect(
+      Array.isArray(body.cart?.products),
+      'cart products are present',
+    ).toBe(true);
+    return body.cart.products;
+  }
+
+  async deleteProduct(product: CartProduct): Promise<void> {
+    // Use the current server-issued URL: it includes the CSRF token and customization.
+    expect(
+      product.remove_from_cart_url,
+      'cart line has a removal URL',
+    ).toBeTruthy();
+    const response = await this.request.post(product.remove_from_cart_url, {
+      form: { ajax: '1', action: 'update' },
+      headers: { 'x-requested-with': 'XMLHttpRequest' },
     });
     const label = `delete product ${product.id_product}/${product.id_product_attribute} from cart`;
     expect(response.status(), label).toBe(200);
@@ -39,9 +53,42 @@ export class CartController {
     expect(body.success, label).toBe(true);
     const stillInCart = body.cart.products.some(
       (p) =>
-        Number(p.id_product) === product.id_product &&
-        Number(p.id_product_attribute) === product.id_product_attribute,
+        Number(p.id_product) === Number(product.id_product) &&
+        Number(p.id_product_attribute) ===
+          Number(product.id_product_attribute) &&
+        Number(p.id_customization ?? 0) ===
+          Number(product.id_customization ?? 0),
     );
     expect(stillInCart, `${label}: line is still in the cart`).toBe(false);
+  }
+
+  async cleanupCart(): Promise<void> {
+    // Read actual server state, including leftovers and additions made outside page objects.
+    const products = await this.getProducts();
+    const errors: string[] = [];
+    for (const product of products.reverse()) {
+      try {
+        await this.deleteProduct(product);
+      } catch (error) {
+        // One failed deletion must not prevent attempts to remove the other lines.
+        errors.push(String(error));
+      }
+    }
+
+    try {
+      await this.expectEmpty();
+    } catch (error) {
+      errors.push(String(error));
+    }
+    if (errors.length > 0) {
+      throw new Error(`Cart cleanup failed:\n${errors.join('\n')}`);
+    }
+  }
+
+  async expectEmpty(): Promise<void> {
+    expect(
+      await this.getProducts(),
+      'cart must be empty after cleanup',
+    ).toEqual([]);
   }
 }

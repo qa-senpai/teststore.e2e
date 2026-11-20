@@ -1,4 +1,4 @@
-import { APIRequestContext, expect } from "@playwright/test";
+import { APIRequestContext, expect } from '@playwright/test';
 
 // PrestaShop has no JSON auth API: login is the same form POST the browser sends
 // (captured in teststore.automationtesting.co.uk.har). On success the server answers
@@ -8,9 +8,9 @@ export class UserController {
 
   async loginAsUser(email: string, password: string): Promise<void> {
     const response = await this.request.post(
-      "/index.php?controller=authentication",
+      '/index.php?controller=authentication',
       {
-        form: { email, password, submitLogin: "1", back: "my-account" },
+        form: { email, password, submitLogin: '1', back: 'my-account' },
         maxRedirects: 0,
       },
     );

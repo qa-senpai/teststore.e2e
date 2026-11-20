@@ -1,4 +1,4 @@
-import { Locator, Page } from "@playwright/test";
+import { Locator, Page } from '@playwright/test';
 
 // The site has no data-test attributes, so name attributes are used.
 export class RegistrationPageLocators {
@@ -10,7 +10,7 @@ export class RegistrationPageLocators {
   readonly saveButton: Locator;
 
   constructor(page: Page) {
-    const form = page.locator("#customer-form");
+    const form = page.locator('#customer-form');
     this.firstNameInput = form.locator('input[name="firstname"]');
     this.lastNameInput = form.locator('input[name="lastname"]');
     this.emailInput = form.locator('input[name="email"]');

@@ -19,7 +19,7 @@ type PageFixtures = {
   checkoutPage: CheckoutPage;
 };
 
-export const test = base.extend<PageFixtures>({
+const test = base.extend<PageFixtures>({
   loginPage: async ({ page }, use) => {
     await use(new LoginPage(page));
   },
@@ -43,4 +43,5 @@ export const test = base.extend<PageFixtures>({
   },
 });
 
+export { test };
 export { expect } from '@playwright/test';

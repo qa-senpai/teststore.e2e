@@ -1,10 +1,16 @@
-import { test, expect } from '../../fixtures';
-import { defaultUser } from '../search/data';
+import { test } from '../../fixtures';
+import { createUniqueUser } from '../search/data';
 
 test.describe('Checkout @e2e @checkout', () => {
-  test.use({ userToLogin: defaultUser });
+  test.beforeEach(async ({ registrationPage, myAccountPage }) => {
+    // Parallel tests clean their carts on teardown, so checkout needs its own account.
+    const user = createUniqueUser();
+    await registrationPage.open();
+    await registrationPage.register(user);
+    await myAccountPage.expectLoggedIn(`${user.firstName} ${user.lastName}`);
+  });
 
-  test('[E2E-0301] registered user adds a product to the cart and places an order', async ({
+  test('[E2E-0301] registered user verifies the order summary when payment is unavailable', async ({
     productPage,
     cartPage,
     checkoutPage,
@@ -16,6 +22,7 @@ test.describe('Checkout @e2e @checkout', () => {
     await productPage.proceedToCheckout();
 
     await cartPage.expectContainsProduct(productName);
+    const expectedSummary = await cartPage.getExpectedSummary();
     await cartPage.proceedToCheckout();
 
     await checkoutPage.expectAddressStep();
@@ -25,9 +32,13 @@ test.describe('Checkout @e2e @checkout', () => {
       postcode: '12345',
       city: 'Testville',
     });
-    await checkoutPage.confirmDelivery();
-    await checkoutPage.payAndPlaceOrder();
 
-    await checkoutPage.expectOrderConfirmed();
+    await checkoutPage.confirmDelivery('My carrier');
+    await checkoutPage.expectPaymentUnavailable();
+    await checkoutPage.expectOrderSummary({
+      ...expectedSummary,
+      shippingCents: 700,
+      taxCents: 0,
+    });
   });
 });

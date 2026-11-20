@@ -1,42 +1,51 @@
-import { test as base, type Cookie } from "@playwright/test";
-import { defaultUser } from "../e2e/search/data";
-import { getUserStorageState, type UserToLogin } from "./auth/storageState";
+import fs from 'fs';
+import path from 'path';
+import { test as base } from '@playwright/test';
+import {
+  isCookiesValid,
+  loginAndSaveStorageState,
+  readStorageStateFile,
+  type UserToLogin,
+} from '../../app/utils/auth/storageState';
 
 type AuthFixtures = {
   userToLogin: UserToLogin | undefined;
-  authCookies: Cookie[];
-  login: void;
 };
 
 export const test = base.extend<AuthFixtures>({
   userToLogin: [undefined, { option: true }],
 
-  // Like the Content Hub fixture: reuse a valid saved session or log in again.
-  storageState: async ({ playwright, baseURL, userToLogin }, use) => {
-    if (!userToLogin) {
+  storageState: async ({ baseURL, userToLogin }, use) => {
+    if (userToLogin) {
+      const fileName = path.resolve(`.auth/${userToLogin.email}.json`);
+      const isExist = fs.existsSync(fileName);
+
+      if (isExist) {
+        const isValid = await isCookiesValid(
+          baseURL as string,
+          readStorageStateFile(fileName),
+        );
+
+        if (!isValid) {
+          await loginAndSaveStorageState(
+            baseURL as string,
+            userToLogin,
+            fileName,
+          );
+        }
+      }
+
+      if (!isExist) {
+        await loginAndSaveStorageState(
+          baseURL as string,
+          userToLogin,
+          fileName,
+        );
+      }
+
+      await use(fileName);
+    } else {
       await use(undefined);
-      return;
     }
-
-    const { fileName } = await getUserStorageState(
-      playwright,
-      baseURL,
-      userToLogin,
-    );
-    await use(fileName);
-  },
-
-  // Keep existing tests using `login: _login` working with the same session cache.
-  authCookies: async ({ playwright, baseURL, userToLogin }, use) => {
-    const { state } = await getUserStorageState(
-      playwright,
-      baseURL,
-      userToLogin ?? defaultUser,
-    );
-    await use(state.cookies);
-  },
-  login: async ({ context, authCookies }, use) => {
-    await context.addCookies(authCookies);
-    await use();
   },
 });

@@ -13,7 +13,8 @@
       "@pages": ["./app/ui/pages/index.ts"],
       "@api": ["./app/api/index.ts"],
       "@data": ["./tests/e2e/search/data/index.ts"],
-      "@fixtures": ["./tests/fixtures/index.ts"]
+      "@fixtures": ["./tests/fixtures/index.ts"],
+      "@utils": ["./app/utils"]
     }
   },
   "include": [
