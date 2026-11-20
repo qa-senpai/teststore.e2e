@@ -13,7 +13,10 @@ export class ProductPageLocators {
     this.categoryProductLinks = page.locator(
       "#js-product-list article.product-miniature a.product-thumbnail",
     );
-    this.productTitle = page.locator('h1[itemprop="name"]');
+    // The product h1 has no itemprop (the theme uses JSON-LD), only class "h1".
+    this.productTitle = page.locator("#main").getByRole("heading", {
+      level: 1,
+    });
     this.addToCartButton = page.locator(
       ".product-add-to-cart button.add-to-cart",
     );

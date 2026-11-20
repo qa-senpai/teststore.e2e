@@ -10,9 +10,9 @@
     "skipLibCheck": true,
     "types": ["node"],
     "paths": {
-      "@pages": ["app/ui/pages/index.ts"],
+      "@pages": ["./app/ui/pages/index.ts"],
       "@api": ["./app/api/index.ts"],
-      "@data": ["tests/e2e/search/data/index.ts"],
+      "@data": ["./tests/e2e/search/data/index.ts"],
       "@fixtures": ["./tests/fixtures/index.ts"]
     }
   },

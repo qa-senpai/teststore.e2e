@@ -4,7 +4,7 @@ description: Use this agent when you need to create comprehensive test plan for 
 tools: Glob, Grep, Read, Write, Bash
 model: sonnet
 color: green
-skills: playwright-cli
+skills: playwright-cli, teststore-business-context
 ---
 
 You are an expert web test planner with extensive experience in quality assurance, user experience testing, and test

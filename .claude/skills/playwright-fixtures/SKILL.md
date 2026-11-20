@@ -29,8 +29,10 @@ import { test, expect } from '../../fixtures/pages';
 
 ## MANDATORY: register every new Page Object
 
-Whenever a Page Object (or component) is created in `pages/` — including via the `page-object-creator` skill —
-add it to `fixtures/pages.ts` in the same change. No page object is finished until this is done. Three edits:
+Whenever a Page Object is created in `app/ui/pages/` — including via the `page-object-creator` skill —
+add it to `tests/fixtures/pages.ts` in the same change. Components (`app/ui/components/`) and modals
+(`app/ui/modals/`) are NOT registered: tests reach them through their owning page (`productPage.addToCartModal`,
+`cartPage.header`). No page object is finished until this is done. Three edits:
 
 1. `import { XPage } from '../pages/XPage';`
 2. Add `xPage: XPage;` to the `PageFixtures` type.

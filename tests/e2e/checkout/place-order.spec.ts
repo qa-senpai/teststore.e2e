@@ -1,8 +1,10 @@
-import { test } from '../../fixtures';
+import { test, expect } from '../../fixtures';
+import { defaultUser } from '../search/data';
 
 test.describe('Checkout @e2e @checkout', () => {
+  test.use({ userToLogin: defaultUser });
+
   test('[E2E-0301] registered user adds a product to the cart and places an order', async ({
-    login: _login,
     productPage,
     cartPage,
     checkoutPage,

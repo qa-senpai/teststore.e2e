@@ -1,6 +1,6 @@
-import { expect, Page } from "@playwright/test";
-import { BasePage } from "../BasePage";
-import { CheckoutPageLocators } from "./CheckoutPageLocators";
+import { expect, Page } from '@playwright/test';
+import { BasePage } from '../BasePage';
+import { CheckoutPageLocators } from './CheckoutPageLocators';
 
 export interface Address {
   address: string;
@@ -9,7 +9,7 @@ export interface Address {
 }
 
 export class CheckoutPage extends BasePage {
-  url = "/index.php?controller=order";
+  url = '/index.php?controller=order';
 
   private readonly locators: CheckoutPageLocators;
 

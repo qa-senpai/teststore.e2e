@@ -11,6 +11,10 @@ on:
           - all
           - chromium
           - search
+      fail_on_console_errors:
+        description: Fail tests that log browser console errors
+        type: boolean
+        default: false
 
 jobs:
   test:
@@ -28,6 +32,7 @@ jobs:
       - name: Run Playwright tests
         env:
           PROJECT: ${{ inputs.project }}
+          FAIL_ON_CONSOLE_ERRORS: ${{ inputs.fail_on_console_errors }}
         run: |
           if [ "$PROJECT" = "all" ]; then
             npx playwright test

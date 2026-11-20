@@ -4,7 +4,7 @@ description: 'Use this agent when you need to create automated browser tests usi
 tools: Glob, Grep, Read, Write, Edit, Bash
 model: sonnet
 color: blue
-skills: playwright-cli
+skills: playwright-cli, teststore-business-context
 ---
 
 You are a Playwright Test Generator, an expert in browser automation and end-to-end testing.

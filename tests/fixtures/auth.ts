@@ -1,28 +1,40 @@
-import { test as base, Cookie } from '@playwright/test';
-import { UserController } from '@api';
-import { defaultUser } from '../e2e/search/data';
+import { test as base, type Cookie } from "@playwright/test";
+import { defaultUser } from "../e2e/search/data";
+import { getUserStorageState, type UserToLogin } from "./auth/storageState";
 
 type AuthFixtures = {
+  userToLogin: UserToLogin | undefined;
   authCookies: Cookie[];
   login: void;
 };
 
 export const test = base.extend<AuthFixtures>({
-  // Logs in through a standalone API context and returns its session cookies.
-  authCookies: async ({ playwright, baseURL }, use) => {
-    const api = await playwright.request.newContext({ baseURL });
-    try {
-      await new UserController(api).loginAsUser(
-        defaultUser.email,
-        defaultUser.password,
-      );
-      const { cookies } = await api.storageState();
-      await use(cookies);
-    } finally {
-      await api.dispose();
+  userToLogin: [undefined, { option: true }],
+
+  // Like the Content Hub fixture: reuse a valid saved session or log in again.
+  storageState: async ({ playwright, baseURL, userToLogin }, use) => {
+    if (!userToLogin) {
+      await use(undefined);
+      return;
     }
+
+    const { fileName } = await getUserStorageState(
+      playwright,
+      baseURL,
+      userToLogin,
+    );
+    await use(fileName);
   },
-  // Puts the session cookies into the browser context: every page opened after this is logged in.
+
+  // Keep existing tests using `login: _login` working with the same session cache.
+  authCookies: async ({ playwright, baseURL, userToLogin }, use) => {
+    const { state } = await getUserStorageState(
+      playwright,
+      baseURL,
+      userToLogin ?? defaultUser,
+    );
+    await use(state.cookies);
+  },
   login: async ({ context, authCookies }, use) => {
     await context.addCookies(authCookies);
     await use();
